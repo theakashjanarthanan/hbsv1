@@ -57,23 +57,23 @@ $checkStmt->bind_param("is", $hall_id, $start_date);
 $checkStmt->execute();
 $result = $checkStmt->get_result();
 
+//  Allow the booking even though there is a booking conflict and conflict_bookings.php mechanism works further
 $conflictingSlots = [];
 while ($row = $result->fetch_assoc()) {
     $existingSlots = explode(',', $row['slot_or_session']);
     $existingSlots = array_map('trim', $existingSlots);
-    
-    // Check for any overlap between requested and existing slots
+
     $overlap = array_intersect($requestedSlots, $existingSlots);
     if (!empty($overlap)) {
         $conflictingSlots = array_merge($conflictingSlots, $overlap);
     }
 }
-
 $conflictingSlots = array_unique($conflictingSlots);
 
 if (!empty($conflictingSlots)) {
-    $conflictMessage = "Hall is already booked for slots: " . implode(', ', $conflictingSlots);
-    die($conflictMessage);
+    $conflictMessage = "Warning: Hall is already booked for slots: " . implode(', ', $conflictingSlots);
+    echo "<script>alert('$conflictMessage');</script>";
+    // Optionally log conflict for audit
 }
 
 

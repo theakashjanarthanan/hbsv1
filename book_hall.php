@@ -1126,6 +1126,47 @@ $currentDateTime = date('Y-m-d H:i:s');
             
         }
 
+        /* Conflict warning styling */
+        .conflict-warning {
+            border-left: 4px solid #ffc107;
+            background-color: #fff3cd;
+            border-color: #ffeaa7;
+        }
+
+        .conflict-warning .alert-warning {
+            background-color: #fff3cd;
+            border-color: #ffeaa7;
+            color: #856404;
+        }
+
+        .conflict-warning .alert-warning strong {
+            color: #856404;
+        }
+
+        .conflict-warning .alert-warning em {
+            color: #6c5ce7;
+            font-style: italic;
+        }
+
+        /* Enhanced conflict display */
+        .conflict-slot {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 4px;
+            padding: 8px;
+            margin: 5px 0;
+            font-size: 0.9rem;
+        }
+
+        .conflict-slot .slot-number {
+            font-weight: bold;
+            color: #856404;
+        }
+
+        .conflict-slot .organizer-info {
+            color: #6c5ce7;
+        }
+
     </style>
 </head>
 
@@ -1329,6 +1370,19 @@ $currentDateTime = date('Y-m-d H:i:s');
                                         <center>
                                             <div id="availability_message"></div>
                                         </center>
+                                        
+                                        <!-- Conflict Information Section -->
+                                        <div id="conflict_info" class="alert alert-info" style="display: none;">
+                                            <i class="bi bi-info-circle me-2"></i>
+                                            <strong>About Booking Conflicts:</strong><br>
+                                            <small>
+                                                • You can book slots that are currently for the approval of the respective HOD<br>
+                                                • This creates a booking conflict that concern HOD will resolve<br>
+                                                <!-- • Conflicts are automatically detected and grouped for easy management<br> -->
+                                                <!-- • The first approved booking will automatically reject conflicting pending requests -->
+                                            </small>
+                                        </div>
+                                        
                                              <span id="booking2" style="display:none;" class="booking-form-container">
 
                                             <div class="mb-3">
@@ -2612,10 +2666,42 @@ $currentDateTime = date('Y-m-d H:i:s');
                             const messageDiv = document.getElementById('availability_message');
                             
                             if (response.available) {
-                                messageDiv.innerHTML = `<span class="text-success">${response.message}</span>`;
+                                // Check if there are pending conflicts
+                                if (response.has_conflicts && response.pending_conflicts) {
+                                    // Show warning styling for conflicts with enhanced formatting
+                                    const conflictSlots = response.pending_conflicts.map(conflict => 
+                                        `<div class="conflict-slot">
+                                            <span class="slot-number">Slot ${conflict.slot}</span>: 
+                                            <span class="organizer-info">${conflict.organiser} (${conflict.purpose}) - Pending</span>
+                                        </div>`
+                                    ).join('');
+                                    
+                                    messageDiv.innerHTML = `<div class="alert alert-warning conflict-warning" role="alert">
+                                        <i class="bi bi-exclamation-triangle me-2"></i>
+                                        <strong>Booking Available with Conflicts</strong><br><br>
+                                        <strong>Note:</strong> This will create a booking conflict with pending requests:<br>
+                                        ${conflictSlots}
+                                        <br><em>The conflict will be resolved by administrators during the approval process.</em>
+                                    </div>`;
+                                    
+                                    // Show conflict information section
+                                    document.getElementById('conflict_info').style.display = 'block';
+                                } else {
+                                    // Show success styling for no conflicts
+                                    messageDiv.innerHTML = `<div class="alert alert-success" role="alert">
+                                        <i class="bi bi-check-circle me-2"></i>
+                                        ${response.message}
+                                    </div>`;
+                                    
+                                    // Hide conflict information section
+                                    document.getElementById('conflict_info').style.display = 'none';
+                                }
                                 showBookingFormWithAnimation();
                             } else {
-                                messageDiv.innerHTML = `<span class="text-danger">${response.message}</span>`;
+                                messageDiv.innerHTML = `<div class="alert alert-danger" role="alert">
+                                    <i class="bi bi-x-circle me-2"></i>
+                                    ${response.message}
+                                </div>`;
                                 hideBookingForm();
                             }
                         } catch (error) {

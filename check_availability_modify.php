@@ -119,11 +119,12 @@ function checkHallAvailability($conn, $hall_id, $organiser_id, $start_date, $end
         error_log("Invalid date format: start_date=$start_date, end_date=$end_date");
         return ['available' => false, 'message' => 'Invalid date format. Please use YYYY-MM-DD format.'];
     }
-    // Simplified query to check availability - check for any overlap
+    
+    // MODIFIED: Only check for approved/booked status, allow pending status to create conflicts
     $query = "SELECT DISTINCT b.slot_or_session, b.status, b.booking_id_gen, b.organiser_name, b.purpose_name 
               FROM bookings b
               WHERE b.hall_id = ? 
-              AND b.status IN ('approved', 'booked', 'pending')
+              AND b.status IN ('approved', 'booked')  -- Removed 'pending' to allow pending bookings
               AND NOT (b.end_date < ? OR b.start_date > ?)
               ORDER BY b.start_date DESC";
 
@@ -213,6 +214,53 @@ function checkHallAvailability($conn, $hall_id, $organiser_id, $start_date, $end
             'conflicting_slots' => array_values($conflictingSlots),
             'conflicting_bookings' => $relevantConflicts
         ];
+    }
+
+    // Check for pending bookings that will create conflicts (informational only)
+    $pendingConflictQuery = "SELECT DISTINCT b.slot_or_session, b.status, b.booking_id_gen, b.organiser_name, b.purpose_name 
+                            FROM bookings b
+                            WHERE b.hall_id = ? 
+                            AND b.status = 'pending'
+                            AND NOT (b.end_date < ? OR b.start_date > ?)
+                            ORDER BY b.start_date DESC";
+    
+    $stmt = $conn->prepare($pendingConflictQuery);
+    if ($stmt) {
+        $stmt->bind_param("iss", $hall_id, $start_date, $end_date);
+        $stmt->execute();
+        $pendingResult = $stmt->get_result();
+        
+        $pendingConflicts = [];
+        while ($row = $pendingResult->fetch_assoc()) {
+            $slots = explode(',', $row['slot_or_session']);
+            foreach ($slots as $slot) {
+                $slot = trim($slot);
+                if (!empty($slot) && in_array($slot, $requestedSlots)) {
+                    $pendingConflicts[] = [
+                        'slot' => $slot,
+                        'organiser' => $row['organiser_name'],
+                        'purpose' => $row['purpose_name']
+                    ];
+                }
+            }
+        }
+        
+        // If there are pending conflicts, show warning but allow booking
+        if (!empty($pendingConflicts)) {
+            $pendingMessages = [];
+            foreach ($pendingConflicts as $conflict) {
+                $pendingMessages[] = "<span class='text-warning'><b>Slot {$conflict['slot']}</b>: {$conflict['organiser']} ({$conflict['purpose']}) - Pending</span>";
+            }
+            
+            return [
+                'available' => true,
+                'message' => 'Hall is available for the selected date/slot. <br><strong>Note:</strong> This will create a booking conflict with pending requests:<br>' . implode('<br>', $pendingMessages) . '<br><br><em>The conflict will be resolved by administrators during the approval process.</em>',
+                'requested_slots' => $requestedSlots,
+                'total_slots' => count($requestedSlots),
+                'pending_conflicts' => $pendingConflicts,
+                'has_conflicts' => true
+            ];
+        }
     }
 
     // Simplified duplicate booking check

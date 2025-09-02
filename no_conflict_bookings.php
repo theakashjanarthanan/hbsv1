@@ -665,7 +665,7 @@ if ($result->num_rows > 0):
                                                     <b style="color: #007bff;"> <?php echo ucwords($row['organiser_name']); ?><br></b>
                                                     <b><?php echo ucwords($row['organiser_department']); ?></b><br>
                                                     <?php echo $row['organiser_mobile']; ?><br>
-                                                        <?php echo $row['organiser_email']; ?>
+                                                    <?php echo $row['organiser_email']; ?>
 
                                         </td>
 <td>                                            <?php
