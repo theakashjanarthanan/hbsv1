@@ -73,14 +73,13 @@ function getDaysInMonth($year, $month)
  * @param string $date - Date in 'YYYY-MM-DD' format
  * @return array - List of booked slots with organizer details
  */
-function getBookedSlots($conn, $hall_id, $date)
-{
+function getBookedSlots($conn, $hall_id, $date) {
     // SQL query to get bookings with status approved or pending on the given date
     $query = "SELECT slot_or_session, status, booking_id_gen, booking_date, students_count, organiser_name, organiser_email, organiser_department, organiser_mobile, purpose, event_type, purpose_name 
               FROM bookings 
               WHERE hall_id = ? 
               AND ? BETWEEN start_date AND end_date
-              AND status IN ('approved', 'pending')";
+              AND status IN ('approved', 'pending', 'allow')";
 
     $stmt = $conn->prepare($query);
     $stmt->bind_param("is", $hall_id, $date);
@@ -201,11 +200,10 @@ $currentDateTime = date('Y-m-d H:i:s');
         }
 
         .calendar-time-column {
-            width: 80px;
-            /* Set fixed width for the time column */
-            text-align: left;
+            width: 100px;
+            text-align: center;
             padding: 2px;
-            font-size: 0.8rem;
+            font-size: 0.9rem;
         }
 
         .calendar-cell {
@@ -216,6 +214,7 @@ $currentDateTime = date('Y-m-d H:i:s');
             cursor: pointer;
             margin: 2px;
             font-size: 0.9rem;
+            
         }
 
         .calendar-time-row {
@@ -297,6 +296,7 @@ $currentDateTime = date('Y-m-d H:i:s');
             border: 1px solid black;
             cursor: not-allowed;
             /* Disable active state */
+            pointer-events: none;
         }
 
         /* White cells */
@@ -343,10 +343,16 @@ $currentDateTime = date('Y-m-d H:i:s');
             color: #007bff;
         }
 
+        .day-number{
+            font-size:0.9rem;
+            margin-top:-5px;
+        }
+
         .day-name {
-            font-size: 0.6em;
+            font-size: 0.9em;
             position:relative;
             bottom:4px
+
         }
 
         .calendar-cell.weekend-cell {
@@ -375,21 +381,109 @@ $currentDateTime = date('Y-m-d H:i:s');
         /* Make the time column's width fixed */
         .time-slot-row {
             display: flex;
-            justify-content: flex-start;
+            justify-content: center;
             align-items: center;
+            margin-bottom: 1;
         }
 
         .time-slot-row:first-of-type {
-            margin-bottom: 20px;
+            margin-bottom: 1;
         }
 
         /* For calendar cells, use flex to ensure layout alignment */
         .time-slot-container {
             display: flex;
             flex-direction: column;
-            border:2px solid black;
         }
 
+        .time-slot-row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            /* Ensure the row expands to fit all day columns */
+            min-width: max-content;
+            /* transition: all 0.3s ease; */
+        }
+
+        .time-slot-row:hover {
+            /* background: rgba(0, 123, 255, 0.05); */
+            /* border-radius: 6px;
+            padding: 2px 4px; */
+        }
+
+        .calendar-time-column {
+            width: 100px;
+            text-align: center;
+            padding: 2px;
+            font-size: 0.9rem;
+        }
+
+        .calendar-time-column:hover {
+            background: rgba(255, 255, 255, 0.7);
+        }
+
+        .calendar-cell {
+            width: 24px;
+            height: 24px;
+            text-align: center;
+            vertical-align: middle;
+            cursor: pointer;
+            margin: 2px;
+            font-size: 0.8rem;
+            /* border-radius: 4px; */
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+            /* Ensure cells don't shrink */
+            flex-shrink: 0;
+        }
+
+        /* Responsive design for different screen sizes */
+        @media (max-width: 1200px) {
+            .calendar-cell {
+                width: 22px;
+                height: 22px;
+                font-size: 0.75rem;
+            }
+            
+            .calendar-time-column {
+                width: 70px;
+                font-size: 0.8rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .calendar-cell {
+                width: 20px;
+                height: 20px;
+                font-size: 0.7rem;
+                margin: 1px;
+            }
+            
+            .calendar-time-column {
+                width: 60px;
+                font-size: 0.75rem;
+                padding: 6px 2px;
+            }
+            
+            .time-slot-row {
+                margin-bottom: 15px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .calendar-cell {
+                width: 18px;
+                height: 18px;
+                font-size: 0.65rem;
+            }
+            
+            .calendar-time-column {
+                width: 50px;
+                font-size: 0.7rem;
+                padding: 4px 2px;
+            }
+        }
 
         /* Status indicator for approved and pending */
         .status-indicator {
@@ -503,7 +597,7 @@ $currentDateTime = date('Y-m-d H:i:s');
             width: 15px;
             height: 15px;
             margin-right: 8px;
-            border-radius: 3px;
+            /* border-radius: 3px; */
             /* Optional: rounds the corners for a softer look */
         }
 
@@ -650,6 +744,12 @@ $currentDateTime = date('Y-m-d H:i:s');
             text-align: center;
             font-weight: 500;
         }
+        .slot-label.disabled {
+            opacity: .55;
+            cursor: not-allowed;
+            text-decoration: line-through;
+            pointer-events: none;
+        }
 
         .slot-label:hover {
             background-color: #e3f2fd;
@@ -720,39 +820,13 @@ $currentDateTime = date('Y-m-d H:i:s');
         .time-slot-container {
             display: flex;
             flex-direction: column;
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .time-slot-container::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
-            transition: left 0.5s ease;
-        }
-
-        .time-slot-container:hover::before {
-            left: 100%;
-        }
-
-        .time-slot-container:hover {
-            border: 2px solid red;
         }
 
         .time-slot-row {
             display: flex;
-            justify-content: flex-start;
+            justify-content: center;
             align-items: center;
-            margin-bottom: 20px;
+            margin-bottom: 0;
             /* transition: all 0.3s ease; */
         }
 
@@ -763,17 +837,10 @@ $currentDateTime = date('Y-m-d H:i:s');
         }
 
         .calendar-time-column {
-            width: 80px;
-            text-align: left;
-            padding: 8px 4px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: #495057;
-            /* background: rgba(255, 255, 255, 0.7); */
-            border-radius: 4px;
-            margin-right: 8px;
-            transition: all 0.3s ease;
-            
+            width: 100px;
+            text-align: center;
+            padding: 2px;
+            font-size: 0.9rem;
         }
 
         .calendar-time-column:hover {
@@ -788,7 +855,7 @@ $currentDateTime = date('Y-m-d H:i:s');
             cursor: pointer;
             margin: 2px;
             font-size: 0.8rem;
-            border-radius: 4px;
+            /* border-radius: 4px; */
             transition: all 0.2s ease;
             position: relative;
             overflow: hidden;
@@ -813,57 +880,69 @@ $currentDateTime = date('Y-m-d H:i:s');
         }
 
         .calendar-cell.available {
+            /* background:rgb(85, 255, 122); */
+            /* border: 1px solid #28a745; */
             background:rgb(85, 255, 122);
-            border: 1px solid #28a745;
+            border: 1px solid black;
             color: white;
             font-weight: 600;
-            border: 2px solid black;
+            /* border: 1px solid black; */
         }
 
         .calendar-cell.available:hover {
             background: linear-gradient(135deg, #20c997, #17a2b8);
             transform: scale(1.1);
             box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+            border: 1px solid black;
         }
 
         .calendar-cell.pending {
             background: rgb(244, 255, 91);
-            border: 1px solid #ffc107;
+            /* border: 1px solid #ffc107; */
             color: #212529;
             font-weight: 600;
             border:2px solid black;
+            border: 1px solid black;
         }
 
         .calendar-cell.pending:hover {
             background: linear-gradient(135deg, #fd7e14, #e83e8c);
             transform: scale(1.1);
             box-shadow: 0 4px 12px rgba(255, 193, 7, 0.4);
+            border: 1px solid black;
         }
 
         .calendar-cell.approved {
-            background: linear-gradient(135deg, #dc3545, #c82333);
-            border: 1px solid #dc3545;
+            /* background: linear-gradient(135deg, #dc3545, #c82333); */
+            /* border: 1px solid #dc3545; */
+            background: rgb(255, 103, 115);
             color: white;
             font-weight: 600;
+            cursor: not-allowed;
+            border: 1px solid black;
         }
 
         .calendar-cell.approved:hover {
             background: linear-gradient(135deg, #c82333, #bd2130);
-            transform: scale(1.1);
-            box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
+            transform: none;
+            box-shadow: none;
+            border: 1px solid black;
         }
 
         .calendar-cell.past {
             background: rgb(162, 162, 162);
-            border: 1px solid #6c757d;
+            /* border: 1px solid #6c757d; */
             color: #adb5bd;
             cursor: not-allowed;
-            border: 2px solid black;
+            border: 1px solid black;
+            pointer-events: none;
+            border: 1px solid black;
         }
 
         .calendar-cell.past:hover {
             transform: none;
             box-shadow: none;
+            border: 1px solid black;
         }
         
         /* Semester info styling */
@@ -901,7 +980,6 @@ $currentDateTime = date('Y-m-d H:i:s');
             border: 2px solid #fff !important;
             box-shadow: 0 0 15px rgba(0, 123, 255, 0.6) !important;
             transform: scale(1.15) !important;
-            z-index: 10;
             animation: slotSelected 0.3s ease-in-out;
         }
 
@@ -994,20 +1072,19 @@ $currentDateTime = date('Y-m-d H:i:s');
             transform: translateY(0);
         }
 
-        /* Time-slot-container loading overlay */
+        /* Full-screen loading overlay */
         .time-slot-loading-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(255, 255, 255, 0.95);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            border-radius: 8px;
-            backdrop-filter: blur(5px);
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(255, 255, 255, 0.6); /* More transparent for better blur visibility */
+        display: none; /* Hidden by default */
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        backdrop-filter: blur(5px); /* Stronger blur effect */
         }
 
         .time-slot-loading-content {
@@ -1083,10 +1160,8 @@ $currentDateTime = date('Y-m-d H:i:s');
             transition: all 0.3s ease;
         }
 
-        .form-control.is-valid {
-            border-color: #28a745;
-            box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
-        }
+        /* Remove green tick/valid styles */
+        .form-control.is-valid { border-color: inherit; box-shadow: none; }
 
         .form-control.is-invalid {
             border-color: #dc3545;
@@ -1096,6 +1171,7 @@ $currentDateTime = date('Y-m-d H:i:s');
         /* Performance optimizations */
         .calendar-cell {
             will-change: transform, box-shadow;
+            
         }
 
         .slot-label {
@@ -1167,6 +1243,24 @@ $currentDateTime = date('Y-m-d H:i:s');
             color: #6c5ce7;
         }
 
+        /* Allow (Pending to Forward) */
+        .calendar-cell.allow {
+            background-color: rgb(255, 214, 102); /* Forward Booking */
+            border: 1px solid black;
+            transition: background-color 0.3s, transform 0.2s, box-shadow 0.3s ease-in-out;
+        }
+
+        .calendar-cell.allow:hover {
+            background-color: rgb(255, 200, 60);
+            border: 1px solid black;
+            transform: scale(1.05);
+            box-shadow: 0 2px 5px rgba(255, 200, 60, 0.6);
+            color: black;
+        }
+
+        .calendar-cell.allow.whitish-cell {
+            background-color: rgba(255, 214, 102, 0.6);
+        }
     </style>
 </head>
 
@@ -1280,7 +1374,7 @@ $currentDateTime = date('Y-m-d H:i:s');
                                                             id="start_date"
                                                             name="start_date"
                                                             class="form-control"
-                                                            value="<?= htmlspecialchars($semesterStart) ?>"
+                                                            value=""
                                                             min="<?= htmlspecialchars($semesterStart) ?>"
                                                             max="<?= htmlspecialchars($semesterEnd) ?>"
                                                             onchange="handleDateChange()"
@@ -1297,7 +1391,7 @@ $currentDateTime = date('Y-m-d H:i:s');
                                                             id="end_date"
                                                             name="end_date"
                                                             class="form-control"
-                                                            value="<?= htmlspecialchars($semesterEnd) ?>"
+                                                            value=""
                                                             min="<?= htmlspecialchars($semesterEnd) ?>"
                                                             max="<?= htmlspecialchars($semesterEnd) ?>"
                                                             onchange="handleDateChange()"
@@ -1351,7 +1445,7 @@ $currentDateTime = date('Y-m-d H:i:s');
                                                 <div class='col-md-3 mb-2'>
                                                     <div class='form-check slot-container'>
                                                         <input class='form-check-input slot-checkbox' type='checkbox' name='slots[]' id='slot{$slotId}' value='{$slotId}'>
-                                                        <label class='form-check-label slot-label' for='slot{$slotId}'>{$slotLabel}</label>
+                                                        <label class='form-check-label slot-label' data-slot='{$slotId}' for='slot{$slotId}'>{$slotLabel}</label>
                                                     </div>
                                                 </div>";
                                             }
@@ -1405,7 +1499,8 @@ $currentDateTime = date('Y-m-d H:i:s');
                                                     <div class="col-md-6 mb-3">
                                                         <label for="event_type" class="form-label">Event Type</label>
                                                         <select class="form-select" id="event_type" name="event_type">
-                                                            <option value="guest_lectures_seminars">Guest Lectures,
+                                                           <option value="">-- Select Event Type --</option>
+                                                           <option value="guest_lectures_seminars">Guest Lectures,
                                                                 Seminars</option>
                                                             <option value="meetings_ceremonies">Meetings, Ceremonies
                                                             </option>
@@ -1461,11 +1556,21 @@ $currentDateTime = date('Y-m-d H:i:s');
                                                     const semesterStart = '<?= $semesterStart ?>';
                                                     const semesterEnd = '<?= $semesterEnd ?>';
 
-                                                    // Set min and max again (just in case)
-                                                    startInput.min = semesterStart;
+                                                    // Compute today's date in YYYY-MM-DD and pick the later of today or semesterStart
+                                                    const todayStr = new Date().toISOString().split('T')[0];
+                                                    const effectiveMin = (semesterStart < todayStr) ? todayStr : semesterStart;
+
+                                                    // Set min and max boundaries
+                                                    startInput.min = effectiveMin;
                                                     startInput.max = semesterEnd;
-                                                    endInput.min = semesterStart;
+                                                    endInput.min = effectiveMin;
                                                     endInput.max = semesterEnd;
+
+                                                    // Ensure initial values are not in the past or outside semester
+                                                    if (startInput.value && startInput.value < effectiveMin) startInput.value = effectiveMin;
+                                                    if (startInput.value && startInput.value > semesterEnd) startInput.value = semesterEnd;
+                                                    if (endInput.value && endInput.value < effectiveMin) endInput.value = effectiveMin;
+                                                    if (endInput.value && endInput.value > semesterEnd) endInput.value = semesterEnd;
 
                                                     // Optional: Disable manual typing (if you want)
                                                     startInput.addEventListener('keydown', e => e.preventDefault());
@@ -1473,21 +1578,21 @@ $currentDateTime = date('Y-m-d H:i:s');
 
                                                     // Add validation on date change to reset invalid dates
                                                     startInput.addEventListener('change', () => {
-                                                        if (startInput.value < semesterStart) startInput.value = semesterStart;
+                                                        if (startInput.value < effectiveMin) startInput.value = effectiveMin;
                                                         if (startInput.value > semesterEnd) startInput.value = semesterEnd;
 
-                                                        // Also update end date min to start date
+                                                        // Also update end date min to start date (can't end before start)
                                                         if (endInput.value < startInput.value) endInput.value = startInput.value;
-                                                        endInput.min = startInput.value;
+                                                        endInput.min = startInput.value || effectiveMin;
                                                     });
 
                                                     endInput.addEventListener('change', () => {
                                                         if (endInput.value > semesterEnd) endInput.value = semesterEnd;
-                                                        if (endInput.value < semesterStart) endInput.value = semesterStart;
+                                                        if (endInput.value < effectiveMin) endInput.value = effectiveMin;
 
                                                         // Also update start date max to end date
                                                         if (startInput.value > endInput.value) startInput.value = endInput.value;
-                                                        startInput.max = endInput.value;
+                                                        startInput.max = endInput.value || semesterEnd;
                                                     });
                                                 });
 
@@ -1665,8 +1770,8 @@ $currentDateTime = date('Y-m-d H:i:s');
                                             <div class="text-center">
                                                 <a href="javascript:history.back()" style="padding:7px 30px;"
                                                     class="btn btn-primary fs-5">Back</a>
-                                                <button type="submit" id="submit_button" class="btn btn-success btn-lg"
-                                                    style="display:none;" disabled>Book Now</button>
+                                                <button type="submit" id="submit_button" class="btn btn-success btn-lg" disabled
+                                                    >Book Now</button>
                                             </div>
                             </form>
 
@@ -1680,7 +1785,6 @@ $currentDateTime = date('Y-m-d H:i:s');
     </div>
     </div>
     </div>
-    <?php include 'assets/footer.php' ?>
     <!-- Add a hidden pop-up modal -->
 
     <div id="cancelBookingModal" class="modal" style="display: none;">
@@ -1759,9 +1863,8 @@ $currentDateTime = date('Y-m-d H:i:s');
 
     <script>
         document.addEventListener("DOMContentLoaded", function () {
-            document.addEventListener("change", function () {
-                window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
-            });
+            // Removed automatic scrolling on change events to prevent unwanted scrolling when selecting slots
+            // Original code: window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
         });
     </script>
 
@@ -1818,7 +1921,6 @@ $currentDateTime = date('Y-m-d H:i:s');
                 if (response.isDuplicate) {
                     duplicateMessage.style.display = 'block';
                     duplicateMessage.textContent = 'Duplicate booking detected! Please modify your selection.';
-                    submitBtn.style.display = 'none';
                     submitBtn.disabled = true;
                 } else {
                     duplicateMessage.style.display = 'none';
@@ -1835,11 +1937,9 @@ $currentDateTime = date('Y-m-d H:i:s');
             const duplicateMessage = document.getElementById('duplicate_booking_message');
 
             if (checkFormFields()) {
-                submitBtn.style.display = 'inline-block';
                 submitBtn.disabled = false;
                 duplicateMessage.style.display = 'none';
             } else {
-                submitBtn.style.display = 'none';
                 submitBtn.disabled = true;
                 duplicateMessage.style.display = 'block';
                 duplicateMessage.textContent = 'Please fill out all required fields.';
@@ -1990,14 +2090,14 @@ $currentDateTime = date('Y-m-d H:i:s');
             endDateInput.setAttribute('min', today);
 
             startDateInput.addEventListener("input", function () {
-                // Get the selected start date
-                const startDate = new Date(startDateInput.value);
-                // Set the end date to the start date if it's empty or less than start date
-                if (!endDateInput.value || new Date(endDateInput.value) < startDate) {
-                    endDateInput.value = startDateInput.value;
-                }
-                // Update the min attribute of end date to ensure it can't be before the start date
+                // Always sync end date with start date
+                endDateInput.value = startDateInput.value;
+                // Ensure end date cannot be before start date
                 endDateInput.setAttribute('min', startDateInput.value);
+                // Update button state if available
+                if (typeof updateSubmitButtonState === 'function') {
+                    updateSubmitButtonState();
+                }
             });
 
             endDateInput.addEventListener("input", function () {
@@ -2009,8 +2109,9 @@ $currentDateTime = date('Y-m-d H:i:s');
             });
 
             document.querySelectorAll('input[name="slots[]"]').forEach(slot => {
-                slot.addEventListener('click', function () {
-                    autoSelectSlots(slot);
+                slot.addEventListener('change', function () {
+                    // Independent selection: just trigger availability check
+                    checkAvailability();
                 });
             });
 
@@ -2238,6 +2339,10 @@ $currentDateTime = date('Y-m-d H:i:s');
                         <span>Pending</span>
                     </div>
                     <div class="legend-item">
+                        <div class="legend-color" style="background-color: rgb(255, 214, 102); border: 1px solid black;"></div>
+                        <span>Forward Booking</span>
+                    </div>
+                    <div class="legend-item">
                         <div class="legend-color" style="background-color: rgb(255, 103, 115); border: 1px solid black;"></div>
                         <span>Booked</span>
                     </div>
@@ -2256,9 +2361,7 @@ $currentDateTime = date('Y-m-d H:i:s');
                     <h5 style='margin:0; padding: 5px 10px;'>${new Date(month.year, month.month - 1).toLocaleString('default', { month: 'long', year: 'numeric' })}</h5>
                     ${nextButton}
                 </div>
-                
-               
-
+            
                 
             `;
 
@@ -2331,25 +2434,65 @@ $currentDateTime = date('Y-m-d H:i:s');
                         const bookedSlots = foundDay.bookedSlots.filter(bs => bs.slot === slot);
                         if (bookedSlots.length > 0) {
                             const statuses = [...new Set(bookedSlots.map(bs => bs.status))];
-                            const status = statuses.includes('approved') ? 'approved' : 'pending';
+                            const status = statuses.includes('approved') ? 'approved' : (statuses.includes('allow') ? 'allow' : 'pending');
+
+                            // Build tooltip for both approved and pending bookings using organiser details
+                            let tooltipText = '';
+                            try {
+                                const organisers = bookedSlots.map(bs => bs.organiserDetails).filter(Boolean);
+                                if (organisers.length > 0) {
+                                    const lines = organisers.slice(0, 3).map((o) => {
+                                        const name = (o.name || 'N/A');
+                                        const dept = (o.department || o.organiser_department || '');
+                                        const purpose = (o.purpose_name || o.purpose || '').toString();
+                                        const eventTypeRaw = (o.event_type || '').toString();
+                                        const eventType = eventTypeRaw.replace(/_/g, '/').replace(/\b\w/g, c => c.toUpperCase());
+                                        const heading = status === 'approved' ? 'Approved Booking' : (status === 'allow' ? 'Pending To Forward Booking' : 'Pending Booking');
+                                        const pieces = [purpose || eventType || heading, name, dept].filter(Boolean);
+                                        return pieces.join(' • ');
+                                    });
+                                    if (organisers.length > 3) lines.push(`+${organisers.length - 3} more...`);
+                                    tooltipText = lines.join('\n');
+                                }
+                            } catch (e) { /* ignore tooltip errors */ }
+                            if (!tooltipText) {
+                                tooltipText = status === 'approved' ? 'Approved Booking' : (status === 'allow' ? 'Pending To Forward Booking' : 'Pending Booking');
+                            }
+
+                            // Escape quotes for HTML attribute safety
+                            const safeTitle = tooltipText.replace(/"/g, '&quot;');
+
+                            // For approved/allow: disable click selection; keep tooltip only. For pending: keep click handler and show detailed tooltip.
+                            const clickAttr = status === 'pending'
+                                ? `onclick="handlePendingClick(this, '${dayDate.toISOString().split('T')[0]}', '${slot}')"`
+                                : '';
+                            const titleAttr = `title=\"${safeTitle}\"`;
 
                             return `
                                     <div class="calendar-cell ${status} ${dayOfWeek === 0 || dayOfWeek === 6 ? 'whitish-cell' : ''}" 
+                                        data-date="${dayDate.toISOString().split('T')[0]}"
+                                        data-slot="${slot}"
                                         data-organiser='${JSON.stringify(bookedSlots.map(bs => bs.organiserDetails))}'
-                                        onclick="${status === 'pending'
-                                    ? `handlePendingClick(this, '${dayDate.toISOString().split('T')[0]}', '${slot}')`
-                                    : `showOrganizerDetails(this)`}">
+                                        ${titleAttr}
+                                        ${clickAttr}>
                                     </div>`;
                         } else {
                             cellClass = 'available';
                         }
                     }
 
+                    let titleText = '';
+                    if (cellClass === 'available') {
+                        titleText = 'Available for Booking';
+                    } else if (cellClass === 'past') {
+                        titleText = 'Cannot Book the Slots Outside the Semester Range';
+                    }
                     return `
                             <div class="calendar-cell ${cellClass} ${dayOfWeek === 0 || dayOfWeek === 6 ? 'whitish-cell' : ''}" 
                                 onclick="${!isWithinSemester ? 'return false;' : `selectDate('${dayDate.toISOString().split('T')[0]}', this, '${slot}')`}"
                                 data-date="${dayDate.toISOString().split('T')[0]}"
-                                data-slot="${slot}">
+                                data-slot="${slot}"
+                                ${titleText ? `title="${titleText}"` : ''}>
                             </div>`;
                 } else {
                     return `<div class="calendar-cell white-cell"></div>`;
@@ -2380,6 +2523,75 @@ $currentDateTime = date('Y-m-d H:i:s');
             }, 1000); // Wait for loading animation to complete
         }
 
+        // Track last clicked available slot for range selection
+        let lastClickedSlot = {
+            date: null,
+            slot: null
+        };
+
+        // Helper function to check if a slot is available for a given date
+        function isSlotAvailable(date, slot) {
+            // Find the day data for the given date
+            const dateObj = new Date(date);
+            const day = dateObj.getDate();
+            const month = dateObj.getMonth() + 1;
+            const year = dateObj.getFullYear();
+            
+            // Find the month in calendarData
+            const monthData = calendarData.find(m => m.year === year && m.month === month);
+            if (!monthData) return false;
+            
+            // Find the day in the month
+            const dayData = monthData.days.find(d => {
+                const dDate = new Date(d.date);
+                return dDate.getDate() === day;
+            });
+            if (!dayData) return false;
+            
+            // Check if date is within semester
+            if (!dayData.isWithinSemester) return false;
+            
+            // Check if slot is in the past
+            const slotTime = timeSlots.find(ts => ts.slot === slot);
+            if (!slotTime) return false;
+            
+            const [hours, minutes, period] = slotTime.time.match(/(\d+):(\d+)\s(AM|PM)/).slice(1);
+            let hour = parseInt(hours);
+            if (period === 'PM' && hour !== 12) hour += 12;
+            if (period === 'AM' && hour === 12) hour = 0;
+            
+            const formattedTime = `${String(hour).padStart(2, '0')}:${minutes}`;
+            const slotDateTime = new Date(`${date}T${formattedTime}`);
+            const currentDateTime = new Date();
+            
+            if (slotDateTime <= currentDateTime) return false;
+            
+            // Check if slot is booked (approved, allow, or pending)
+            const bookedSlots = dayData.bookedSlots.filter(bs => bs.slot === slot);
+            if (bookedSlots.length > 0) {
+                return false; // Slot is booked (pending, allow, or approved)
+            }
+            
+            return true; // Slot is available
+        }
+
+        // Function to select all available slots between two slots on the same day
+        function selectRangeBetweenSlots(date, startSlot, endSlot) {
+            const slotsToSelect = [];
+            const minSlot = Math.min(startSlot, endSlot);
+            const maxSlot = Math.max(startSlot, endSlot);
+            
+            // Iterate through all slots between min and max
+            for (let slot = minSlot; slot <= maxSlot; slot++) {
+                // Only select if the slot is available
+                if (isSlotAvailable(date, slot)) {
+                    slotsToSelect.push(slot);
+                }
+            }
+            
+            return slotsToSelect;
+        }
+
         function selectDate(date, element, slot) {
             // Check if the date is within semester range
             if (!isDateWithinSemester(date)) {
@@ -2387,42 +2599,182 @@ $currentDateTime = date('Y-m-d H:i:s');
                 return;
             }
             
-            // Show loading overlay for time slot selection
-            showTimeSlotLoading();
-            simulateTimeSlotProcessing();
+            // Check if this is an available slot (not pending, allow, or approved)
+            const isAvailable = element.classList.contains('available');
+            const isPending = element.classList.contains('pending');
+            const isAllow = element.classList.contains('allow');
+            const isApproved = element.classList.contains('approved');
             
+            // Only handle range selection for available slots
+            const slotInt = parseInt(slot);
+            // Check current selected slots for range selection logic
+            const currentSelectedSlotsForRange = Array.from(document.querySelectorAll('input[name="slots[]"]:checked'))
+                .map(s => s.value);
+            const isSlotAlreadySelected = currentSelectedSlotsForRange.includes(slot.toString());
+            
+            // Check if this is a range selection (different slot, same day, both available, clicked slot not already selected)
+            const startDateInputForRange = document.getElementById('start_date');
+            const previousDateForRange = startDateInputForRange.value;
+            const dateChangedForRange = previousDateForRange && previousDateForRange !== date;
+            
+            // Only allow range selection on the same day (if date changed, treat as new selection)
+            if (isAvailable && !dateChangedForRange && lastClickedSlot.date === date && lastClickedSlot.slot !== null && lastClickedSlot.slot !== slotInt && !isSlotAlreadySelected) {
+                // Range selection: user clicked another available slot on the same day
+                const slotsToSelect = selectRangeBetweenSlots(date, lastClickedSlot.slot, slotInt);
+                
+                // Show loading overlay for time slot selection
+                showTimeSlotLoading();
+                simulateTimeSlotProcessing();
+                
+                const startDateInput = document.getElementById('start_date');
+                const endDateInput = document.getElementById('end_date');
+                const slotInput = document.getElementById('slot_or_session');
+                const fnCheckbox = document.getElementById('fn');
+                const anCheckbox = document.getElementById('an');
+                fnCheckbox.checked = false;
+                anCheckbox.checked = false;
+
+                // Apply clicked date to both From and To, and sync displays
+                startDateInput.value = date;
+                endDateInput.value = date;
+                endDateInput.setAttribute('min', startDateInput.value);
+                if (typeof syncDisplaysFromHidden === 'function') {
+                    syncDisplaysFromHidden();
+                }
+                
+                // Get current selected slots (should be from same date for range selection)
+                const currentSelectedSlots = Array.from(document.querySelectorAll('input[name="slots[]"]:checked'))
+                    .map(s => parseInt(s.value));
+                
+                // Add all slots in the range (avoid duplicates)
+                slotsToSelect.forEach(slotNum => {
+                    if (!currentSelectedSlots.includes(slotNum)) {
+                        currentSelectedSlots.push(slotNum);
+                    }
+                });
+                
+                slotInput.value = currentSelectedSlots.join(',');
+                document.getElementById('booking').style.display = 'block';
+                document.getElementById('organizer-details-table').style.display = 'none';
+                document.getElementById('organizer-details-heading').style.display = 'none';
+
+                // Delay the slot checkbox update to allow loading animation to complete
+                setTimeout(() => {
+                    // Select all slots in the range
+                    slotsToSelect.forEach(slotNum => {
+                        updateSlotCheckboxes(slotNum, true);
+                    });
+                }, 1000);
+                
+                // Update last clicked slot
+                lastClickedSlot = { date: date, slot: slotInt };
+                return;
+            }
+            
+            // Normal single slot selection/deselection
             const startDateInput = document.getElementById('start_date');
             const endDateInput = document.getElementById('end_date');
             const slotInput = document.getElementById('slot_or_session');
             const fnCheckbox = document.getElementById('fn');
             const anCheckbox = document.getElementById('an');
-            fnCheckbox.checked = false;
-            anCheckbox.checked = false;
-
-            // Set the date inputs
-            if (!startDateInput.value && !endDateInput.value) {
-                startDateInput.value = date;
-                endDateInput.value = date;
-            } else {
-                startDateInput.value = date;
-                endDateInput.value = date;
-            }
             
-            // Update slot input with current selection
+            // Check if the date has changed from the previous selection
+            const previousDate = startDateInput.value;
+            const dateChanged = previousDate && previousDate !== date;
+            
+            // Check if slot is already selected
             const currentSelectedSlots = Array.from(document.querySelectorAll('input[name="slots[]"]:checked'))
-                .map(slot => slot.value);
+                .map(s => s.value);
+            const isAlreadySelected = currentSelectedSlots.includes(slot.toString());
             
-            // Add the newly clicked slot if not already selected
-            if (!currentSelectedSlots.includes(slot)) {
-                currentSelectedSlots.push(slot);
+            // Check if the clicked cell has activeAttachment class (visual indicator)
+            const isVisuallySelected = element.classList.contains('activeAttachment');
+            const shouldDeselect = isAlreadySelected || isVisuallySelected;
+            
+            // Don't allow deselection of approved/allow slots (they can't be selected anyway)
+            if (shouldDeselect && (isApproved || isAllow)) {
+                return; // Can't deselect what wasn't selectable
             }
             
-            slotInput.value = currentSelectedSlots.join(',');
+            // If date has changed, clear all previous selections first
+            if (dateChanged && !shouldDeselect) {
+                // Clear all slot checkboxes
+                const allCheckboxes = document.querySelectorAll('.slot-checkbox');
+                allCheckboxes.forEach(checkbox => {
+                    checkbox.checked = false;
+                });
+                
+                // Clear slot input
+                slotInput.value = '';
+                
+                // Clear calendar visualization
+                const activeCells = document.querySelectorAll('.activeAttachment');
+                activeCells.forEach(cell => {
+                    cell.classList.remove('activeAttachment');
+                });
+                
+                // Reset last clicked slot
+                lastClickedSlot = { date: null, slot: null };
+                
+                // Update display
+                updateSelectedSlotsDisplay([]);
+            }
+            
+            // Show loading overlay for time slot selection/deselection
+            showTimeSlotLoading();
+            simulateTimeSlotProcessing();
+            
+            // Only uncheck FN/AN if we're deselecting
+            if (shouldDeselect) {
+                fnCheckbox.checked = false;
+                anCheckbox.checked = false;
+            }
+
+            // Apply clicked date to both From and To, and sync displays
+            startDateInput.value = date;
+            endDateInput.value = date;
+            endDateInput.setAttribute('min', startDateInput.value);
+            if (typeof syncDisplaysFromHidden === 'function') {
+                syncDisplaysFromHidden();
+            }
+            
+            // Get updated selected slots after potential date change clearing
+            const updatedSelectedSlots = dateChanged && !shouldDeselect 
+                ? [] 
+                : Array.from(document.querySelectorAll('input[name="slots[]"]:checked'))
+                    .map(s => s.value);
+            
+            // Update slot input based on selection/deselection
+            if (shouldDeselect) {
+                // Remove the slot from selection
+                const filteredSlots = updatedSelectedSlots.filter(s => s !== slot.toString());
+                slotInput.value = filteredSlots.join(',');
+                
+                // Reset last clicked slot when deselecting
+                if (lastClickedSlot.slot === slotInt && lastClickedSlot.date === date) {
+                    lastClickedSlot = { date: null, slot: null };
+                }
+            } else {
+                // Add the slot to selection
+                if (!updatedSelectedSlots.includes(slot.toString())) {
+                    updatedSelectedSlots.push(slot.toString());
+                }
+                slotInput.value = updatedSelectedSlots.join(',');
+                
+                // Update last clicked slot only if it's an available slot
+                if (isAvailable) {
+                    lastClickedSlot = { date: date, slot: slotInt };
+                } else {
+                    // Reset if clicking on non-available slot
+                    lastClickedSlot = { date: null, slot: null };
+                }
+            }
+            
             document.getElementById('booking').style.display = 'block';
 
-            const status = element.classList.contains('pending') ? 'pending' : 'other';
+            const status = isPending ? 'pending' : 'other';
 
-            if (status === 'pending') {
+            if (status === 'pending' && !shouldDeselect) {
                 document.getElementById('organizer-details-table').style.display = 'table';
                 document.getElementById('organizer-details-heading').style.display = 'block';
             } else {
@@ -2432,15 +2784,27 @@ $currentDateTime = date('Y-m-d H:i:s');
 
             // Delay the slot checkbox update to allow loading animation to complete
             setTimeout(() => {
-                updateSlotCheckboxes(slot, true); // true means add to selection
+                if (shouldDeselect) {
+                    // Toggle to deselect
+                    updateSlotCheckboxes(slot, false, true);
+                } else {
+                    // Add to selection
+                    updateSlotCheckboxes(slot, true);
+                }
             }, 1000); // Wait for loading animation to complete
         }
 
 
-        function updateSlotCheckboxes(selectedSlot, addToSelection = false) {
+        function updateSlotCheckboxes(selectedSlot, addToSelection = false, toggleSelection = false) {
             const checkboxes = document.querySelectorAll('.slot-checkbox');
             
-            if (addToSelection) {
+            if (toggleSelection) {
+                // Toggle selection: if already selected, deselect; otherwise select
+                const targetCheckbox = document.getElementById(`slot${selectedSlot}`);
+                if (targetCheckbox) {
+                    targetCheckbox.checked = !targetCheckbox.checked;
+                }
+            } else if (addToSelection) {
                 // Add to existing selection (multiple selection mode)
                 const targetCheckbox = document.getElementById(`slot${selectedSlot}`);
                 if (targetCheckbox) {
@@ -2580,24 +2944,7 @@ $currentDateTime = date('Y-m-d H:i:s');
         // Initial render
         renderCalendar(calendarData);
 
-        function autoSelectSlots(checkbox) {
-            const slots = document.querySelectorAll('input[name="slots[]"]');
-            let start = null, end = null;
-
-            slots.forEach((slot, index) => {
-                if (slot.checked) {
-                    if (start === null) start = index;
-                    end = index;
-                }
-            });
-
-            if (start !== null && end !== null) {
-                for (let i = start; i <= end; i++) {
-                    slots[i].checked = true;
-                }
-            }
-            checkAvailability();
-        }
+        // Removed autoSelectSlots to allow free selection/deselection of any slots
 
         // Debounce mechanism to prevent rapid successive calls
         let checkAvailabilityTimeout;
@@ -2772,13 +3119,8 @@ $currentDateTime = date('Y-m-d H:i:s');
             bookingForm.style.display = 'block';
             bookingForm.classList.add('show');
             
-            // Scroll to the booking form for better UX
-            setTimeout(() => {
-                bookingForm.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'start'
-                });
-            }, 300);
+            // Removed automatic scrolling to prevent unwanted scrolling when selecting slots
+            // Users can manually scroll if needed
         }
 
         function hideBookingForm() {
@@ -2792,9 +3134,8 @@ $currentDateTime = date('Y-m-d H:i:s');
         const startDateInput = document.getElementById('start_date');
         const endDateInput = document.getElementById('end_date');
 
-        // Ensure both inputs have a minimum value of today
-        startDateInput.setAttribute('min', today);
-        endDateInput.setAttribute('min', today);
+        // Do not force today's date; respect HTML min/max set server-side
+        // Keep end date's min synced to chosen start date only via event handlers
 
         startDateInput.addEventListener("input", function () {
             // Get the selected start date
@@ -2807,6 +3148,8 @@ $currentDateTime = date('Y-m-d H:i:s');
 
             // Update the min attribute of the end date to ensure it cannot be set to a day before the start date.
             endDateInput.setAttribute('min', startDateInput.value);
+            // Sync displays when hidden values change
+            
         });
 
         endDateInput.addEventListener("input", function () {
@@ -2818,7 +3161,18 @@ $currentDateTime = date('Y-m-d H:i:s');
             else if (new Date(endDateInput.value) < new Date(startDateInput.value)) {
                 endDateInput.value = startDateInput.value;
             }
+            
         });
+
+        function clampToSemester(dateStr) {
+            const min = startDateInput.getAttribute('min');
+            const max = startDateInput.getAttribute('max');
+            if (!dateStr) return '';
+            if (min && dateStr < min) return min;
+            if (max && dateStr > max) return max;
+            return dateStr;
+        }
+        
     </script>
         <!-- Loading Overlay -->
         <div id="loadingOverlay" class="loading-overlay" style="display: none;">
@@ -3070,7 +3424,7 @@ $currentDateTime = date('Y-m-d H:i:s');
                 
                 if (isValid) {
                     field.classList.remove('is-invalid');
-                    field.classList.add('is-valid');
+                    field.classList.remove('is-valid');
                 } else {
                     field.classList.remove('is-valid');
                     field.classList.add('is-invalid');
@@ -3233,6 +3587,11 @@ $currentDateTime = date('Y-m-d H:i:s');
             document.getElementById('start_date_error').textContent = '';
             document.getElementById('end_date_error').textContent = '';
 
+            // Reset range selection tracking when dates change
+            if (lastClickedSlot.date && (lastClickedSlot.date !== startDateStr || lastClickedSlot.date !== endDateStr)) {
+                lastClickedSlot = { date: null, slot: null };
+            }
+
             // Validation: start date within semester range
             if (startDateStr && (startDate < minDate || startDate > maxDate)) {
                 document.getElementById('start_date_error').textContent = 'Start date must be within the semester.';
@@ -3306,12 +3665,12 @@ $currentDateTime = date('Y-m-d H:i:s');
                 const startDate = document.getElementById('start_date').value;
                 const endDate = document.getElementById('end_date').value;
                 
-                if (!startDate || !endDate || selectedSlots.length === 0) {
-                    // Clear all active attachments if no date or slots selected
+                if (!startDate || !endDate) {
+                    // Clear all active attachments and reset disables if no dates
                     const activeCells = document.querySelectorAll('.activeAttachment');
-                    activeCells.forEach(cell => {
-                        cell.classList.remove('activeAttachment');
-                    });
+                    activeCells.forEach(cell => { cell.classList.remove('activeAttachment'); });
+                    document.querySelectorAll('.slot-checkbox').forEach(cb => { cb.disabled = false; });
+                    document.querySelectorAll('.slot-label').forEach(lb => { lb.classList.remove('disabled'); });
                     return;
                 }
                 
@@ -3334,8 +3693,12 @@ $currentDateTime = date('Y-m-d H:i:s');
                         const endDateObj = new Date(endDate);
                         
                         if (cellDateObj >= startDateObj && cellDateObj <= endDateObj) {
-                            // Check if this cell's slot is selected
-                            if (selectedSlots.includes(cellSlot)) {
+                            // Highlight pending and available cells only (exclude approved/past)
+                            const isPending = cell.classList.contains('pending');
+                            const isAvailable = cell.classList.contains('available');
+                            const isApproved = cell.classList.contains('approved');
+                            const isPast = cell.classList.contains('past');
+                            if ((isPending || isAvailable) && !isApproved && !isPast && selectedSlots.includes(cellSlot)) {
                                 cell.classList.add('activeAttachment');
                                 
                                 // Add special animation for multiple selections
@@ -3351,6 +3714,40 @@ $currentDateTime = date('Y-m-d H:i:s');
                 if (selectedSlots.length > 1) {
                     showMultipleSlotFeedback(selectedSlots.length);
                 }
+
+                // Disable slot checkboxes for approved/past/outside-semester cells within the selected date range
+                const disabledSlots = new Set();
+                const cellsInRange = document.querySelectorAll('.calendar-cell');
+                cellsInRange.forEach(cell => {
+                    const cellDate = cell.getAttribute('data-date');
+                    const cellSlot = cell.getAttribute('data-slot');
+                    if (!cellDate || !cellSlot) return;
+                    const cellDateObj = new Date(cellDate);
+                    const sObj = new Date(startDate);
+                    const eObj = new Date(endDate);
+                    if (cellDateObj < sObj || cellDateObj > eObj) return;
+
+                    // Specifically target approved, allow (forward booking), and past cells
+                    if (cell.classList.contains('approved') || cell.classList.contains('allow') || cell.classList.contains('past')) {
+                        disabledSlots.add(cellSlot);
+                    }
+                });
+
+                // Apply disabling to corresponding slot checkboxes and labels
+                document.querySelectorAll('.slot-checkbox').forEach(cb => {
+                    const slotVal = cb.value;
+                    const label = document.querySelector(`label.slot-label[for="${cb.id}"]`);
+                    if (disabledSlots.has(slotVal)) {
+                        cb.checked = false;
+                        cb.disabled = true;
+                        if (label) label.classList.add('disabled');
+                    } else {
+                        cb.disabled = false;
+                        if (label) label.classList.remove('disabled');
+                    }
+
+                
+                });
             }
 
             // Function to show visual feedback for multiple slot selection
@@ -3467,6 +3864,9 @@ $currentDateTime = date('Y-m-d H:i:s');
                 // Clear calendar visualization
                 updateCalendarForSelectedSlots([]);
                 
+                // Reset range selection tracking
+                lastClickedSlot = { date: null, slot: null };
+                
                 // Call availability check
                 checkAvailability();
             }
@@ -3477,18 +3877,46 @@ $currentDateTime = date('Y-m-d H:i:s');
                 const anSelected = document.querySelector('#an').checked;
                 const slotCheckboxes = document.querySelectorAll('.slot-checkbox');
 
+                // Build set of slots that are disabled due to approved/past in range
+                const startDate = document.getElementById('start_date').value;
+                const endDate = document.getElementById('end_date').value;
+                const disabledSlots = new Set();
+                if (startDate && endDate) {
+                    document.querySelectorAll('.calendar-cell').forEach(cell => {
+                        const cellDate = cell.getAttribute('data-date');
+                        const cellSlot = cell.getAttribute('data-slot');
+                        if (!cellDate || !cellSlot) return;
+                        const d = new Date(cellDate);
+                        const s = new Date(startDate);
+                        const e = new Date(endDate);
+                        if (d < s || d > e) return;
+                        if (cell.classList.contains('approved') || cell.classList.contains('past')) {
+                            disabledSlots.add(cellSlot);
+                        }
+                    });
+                }
+
                 slotCheckboxes.forEach(checkbox => {
                     const slotValue = parseInt(checkbox.value);
-                    if (fnSelected && slotValue >= 1 && slotValue <= 4) {
+
+                    // Determine if this slot belongs to FN or AN group
+                    const isFnSlot = slotValue >= 1 && slotValue <= 4;
+                    const isAnSlot = slotValue >= 5 && slotValue <= 8;
+
+                    // Skip if the slot is disabled (approved/past)
+                    const isDisabledSlot = disabledSlots.has(String(slotValue));
+
+                    if (fnSelected && isFnSlot && !isDisabledSlot) {
                         checkbox.checked = true;
                     }
-                    if (anSelected && slotValue >= 5 && slotValue <= 8) {
+                    if (anSelected && isAnSlot && !isDisabledSlot) {
                         checkbox.checked = true;
                     }
-                    if (!fnSelected && slotValue >= 1 && slotValue <= 4) {
+
+                    if (!fnSelected && isFnSlot) {
                         checkbox.checked = false;
                     }
-                    if (!anSelected && slotValue >= 5 && slotValue <= 8) {
+                    if (!anSelected && isAnSlot) {
                         checkbox.checked = false;
                     }
                 });

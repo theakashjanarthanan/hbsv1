@@ -210,7 +210,7 @@ function checkHallAvailability($conn, $hall_id, $organiser_id, $start_date, $end
 
         return [
             'available' => false,
-            'message' => 'Hall is not available for the selected date/slot.<br>' . implode('<br>', $conflictMessages),
+            'message' => 'Hall is not available for the selected date/slot.',
             'conflicting_slots' => array_values($conflictingSlots),
             'conflicting_bookings' => $relevantConflicts
         ];

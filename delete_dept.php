@@ -24,7 +24,7 @@ if (isset($_GET['dept_ids'], $_GET['scl_id']) && !empty($_GET['dept_ids']) && !e
             $stmt->bind_param($types, ...array_map('intval', $departmentIds));
 
             if ($stmt->execute()) {
-                header("Location: view_dept.php?id=$schoolId&msg=Departments Deleted Successfully");
+                header("Location: view_dept.php?id=$schoolId&deleted=1");
                 exit();
             } else {
                 header("Location: view_dept.php?id=$schoolId&msg=Error Deleting Departments");

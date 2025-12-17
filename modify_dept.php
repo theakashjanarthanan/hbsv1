@@ -55,7 +55,7 @@ $stmt->close();
         <div class="col-md-8 mt-5">
             <div class="col-12 pt-5">
                 <form id="myForm" method="POST" class="p-5 bg-white rounded shadow">
-                    <h2 class="text-center text-primary mb-4">Update Department</h2>
+                    <h2 class="text-center text-primary mb-4">Modify Department</h2>
 
                     <!-- School Dropdown -->
                     <div class="mb-3">
@@ -218,8 +218,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['updatedept'])) {
     );
 
     if ($update_stmt->execute()) {
-        echo "<script>alert('Department updated successfully!');</script>";
-        echo "<script>window.location.href='view_dept.php?id=" . htmlspecialchars($scl_id) . "';</script>";
+        echo "<script>alert('Department Modified Successfully!');</script>";
+        echo "<script>window.location.href='view_dept.php?id=" . htmlspecialchars($scl_id) . "&modified=1';</script>";
     } else {
         echo "<script>alert('Error updating department: " . htmlspecialchars($conn->error) . "');</script>";
     }

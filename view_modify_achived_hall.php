@@ -176,6 +176,56 @@ $result = $conn->query($query);
             background-color: #007bff;
             color: white;
         }
+        /* Disable effect for action buttons */
+        .icon-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            filter: grayscale(100%);
+            pointer-events: none;
+        }
+        /* Loading overlay inside table during search */
+        .table-container { position: relative; }
+        .loading-overlay {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            z-index: 10;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+        .loading-spinner {
+            width: 2.5rem;
+            height: 2.5rem;
+            border: 0.35rem solid #e0e0e0;
+            border-top-color: #007bff;
+            border-radius: 50%;
+            animation: spin 0.9s linear infinite;
+            margin: 0 auto 10px auto;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        /* Search suggestions dropdown */
+        .search-suggestions-wrapper { position: relative; }
+        #hallSearchSuggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-top: none;
+            z-index: 20;
+            display: none;
+            max-height: 240px;
+            overflow-y: auto;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        #hallSearchSuggestions .item { padding: 8px 10px; cursor: pointer; font-size: 14px; }
+        #hallSearchSuggestions .item:hover { background: #f1f5ff; }
     </style>
     <title>Admin Home</title>
 </head>
@@ -195,9 +245,19 @@ $result = $conn->query($query);
                             <div class="col-8">
                                 <div style="display: flex; align-items: center; gap: 10px; margin: 20px;">
                                     <!-- active  -->
-                                    <button onclick="updateMultipleStatus()" class="icon-button blue-button">
-                                        <i class="fa-solid fa-pen-to-square"></i> Active
+                                    <button id="markAvailableBtn" onclick="updateMultipleStatus()" class="icon-button blue-button" disabled>
+                                        <i class="fa-solid fa-pen-to-square"></i> Mark As Available
                                     </button>
+                                    <!-- Inline search next to action button -->
+                                    <div class="search-suggestions-wrapper" style="max-width: 300px; margin-left:8px; width:100%;">
+                                        <div class="input-group">
+                                            <input type="text" id="hallSearch" class="form-control" placeholder="Search Hall by Name" aria-label="Search halls" autocomplete="off">
+                                            <button type="button" id="hallSearchBtn" class="btn btn-secondary" title="Search">
+                                                <i class="fa-solid fa-magnifying-glass"></i>
+                                            </button>
+                                        </div>
+                                        <div id="hallSearchSuggestions"></div>
+                                    </div>
                                 </div>
                             </div>
                             <div class="col-4">
@@ -207,15 +267,24 @@ $result = $conn->query($query);
                                     <button id="multiSelectToggle" onclick="toggleMultiSelect()" style="padding: 5px 10px; border: none; border-radius: 5px; background-color: #ccc; cursor: pointer;">
                                         Off
                                     </button>
+                                    <!-- Clear All Filters -->
+                                    <button type="button" id="clearFiltersButton" class="icon-button" onclick="clearAllArchivedHallFilters()" disabled>
+                                        <i class="fa-solid fa-broom"></i> Clear Filters
+                                    </button>
                                 </div>
-
                             </div>
                         </div>
 
 
 
                         <!-- Table -->
-                        <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+                        <div class="table-responsive table-container" style="max-height: 500px; overflow-y: auto; position: relative;">
+                            <div id="loadingOverlay" class="loading-overlay" style="display:none;">
+                                <div>
+                                    <div class="loading-spinner"></div>
+                                    <div style="color:#007bff; font-weight:600;">Searching...</div>
+                                </div>
+                            </div>
                             <table class="table table-hover align-middle table-bordered" id="bookingTable">
                                 <thead class="table-light sticky-top" style="z-index: 0;">
                                     <tr>
@@ -223,21 +292,21 @@ $result = $conn->query($query);
                                         <th>Date</th>
                                         <th>
                                             Hall Details
-                                            <button class="btn btn-sm btn-outline-secondary ms-2" onclick="openFilterPopup()" title="Filter Hall Details">
+                                            <!-- <button class="btn btn-sm btn-outline-secondary ms-2" onclick="openFilterPopup()" title="Filter Hall Details">
                                                 <i class="bi bi-funnel"></i>
-                                            </button>
+                                            </button> -->
                                         </th>
                                         <th>
                                             Belongs to
-                                            <button class="btn btn-sm btn-outline-secondary ms-2" onclick="openFilterPopup1()" title="Filter Belongs To">
+                                            <!-- <button class="btn btn-sm btn-outline-secondary ms-2" onclick="openFilterPopup1()" title="Filter Belongs To">
                                                 <i class="bi bi-funnel"></i>
-                                            </button>
+                                            </button> -->
                                         </th>
                                         <th>
                                             Features
-                                            <button class="btn btn-sm btn-outline-secondary ms-2" onclick="openFilterPopup2()" title="Filter Features">
+                                            <!-- <button class="btn btn-sm btn-outline-secondary ms-2" onclick="openFilterPopup2()" title="Filter Features">
                                                 <i class="bi bi-funnel"></i>
-                                            </button>
+                                            </button> -->
                                         </th>
                                         <th>Incharge Details</th>
                                         <th>Status</th>
@@ -245,6 +314,7 @@ $result = $conn->query($query);
                                 </thead>
                                 <tbody>
                                     <?php if ($result->num_rows > 0): ?>
+                                        <?php $archivedCount = 0; ?>
                                         <?php while ($row = $result->fetch_assoc()): ?>
                                             <?php
                                                 $features = array_filter([
@@ -255,6 +325,7 @@ $result = $conn->query($query);
                                                 $features_string = implode(', ', $features);
                                             ?>
                                             <?php if ($row['status'] === "Archived"): ?>
+                                                <?php $archivedCount++; ?>
                                                 <tr>
                                                     <td>
                                                         <input type="checkbox" class="form-check-input hall-checkbox" style="width: 20px; height: 20px; margin: 0 30%;" value="<?= htmlspecialchars($row['hall_id']) ?>" onclick="handleCheckbox(this)">
@@ -291,9 +362,14 @@ $result = $conn->query($query);
                                                 </tr>
                                             <?php endif; ?>
                                         <?php endwhile; ?>
+                                        <?php if ($archivedCount === 0): ?>
+                                            <tr>
+                                                <td colspan="7" class="text-center text-muted">No Archived Halls available</td>
+                                            </tr>
+                                        <?php endif; ?>
                                     <?php else: ?>
                                         <tr>
-                                            <td colspan="7" class="text-center text-muted">No results found</td>
+                                            <td colspan="7" class="text-center text-muted">No Archived Halls available</td>
                                         </tr>
                                     <?php endif; ?>
                                 </tbody>
@@ -304,7 +380,6 @@ $result = $conn->query($query);
             </div>
         </div>
     </div>
-    <?php include 'assets/footer.php' ?>
     <script>
         function toggleBelongsTo(value) {
             if (value === 'Department') {
@@ -374,6 +449,141 @@ $result = $conn->query($query);
         // Function to modify a selected hall
     </script>
 
+    <script>
+        // Search handling with 2s loading overlay and client-side filter for halls, plus suggestions
+        (function setupHallSearch(){
+            function performSearch(){
+                const raw = (document.getElementById('hallSearch')?.value || '');
+                const query = raw.trim().toLowerCase();
+                if (query.length === 0) return; // only search if input has text
+                const overlay = document.getElementById('loadingOverlay');
+                if (!overlay) return;
+                overlay.style.display = 'flex';
+                setTimeout(function(){
+                    try{
+                        const tbody = document.querySelector('#bookingTable tbody');
+                        if (tbody) {
+                            const existing = tbody.querySelector('#noResultsRow');
+                            if (existing) existing.remove();
+                        }
+                        const rows = document.querySelectorAll('#bookingTable tbody tr');
+                        rows.forEach(function(row){
+                            if (!row || !row.cells || row.cells.length === 0) return;
+                            const text = row.textContent.toLowerCase();
+                            row.style.display = text.includes(query) ? '' : 'none';
+                        });
+                        const visibleCount = Array.from(rows).filter(function(r){ return r && r.style.display !== 'none'; }).length;
+                        if (visibleCount === 0 && tbody) {
+                            const thCount = document.querySelectorAll('#bookingTable thead th').length || 1;
+                            const tr = document.createElement('tr');
+                            tr.id = 'noResultsRow';
+                            const td = document.createElement('td');
+                            td.colSpan = thCount;
+                            td.className = 'text-center text-muted';
+                            td.textContent = 'No Results Found';
+                            tr.appendChild(td);
+                            tbody.appendChild(tr);
+                        }
+                    } finally {
+                        overlay.style.display = 'none';
+                    }
+                }, 2000);
+            }
+
+            document.addEventListener('DOMContentLoaded', function(){
+                const btn = document.getElementById('hallSearchBtn');
+                const input = document.getElementById('hallSearch');
+                const suggestions = document.getElementById('hallSearchSuggestions');
+                let hallNamesCache = [];
+
+                function extractUniqueHallNames(){
+                    const names = [];
+                    const rows = document.querySelectorAll('#bookingTable tbody tr');
+                    rows.forEach(function(row){
+                        const tds = row.querySelectorAll('td');
+                        if (tds && tds.length >= 3) {
+                            // Hall name is the second line in the Hall Details column (index 2)
+                            const lines = (tds[2].innerText || '').split('\n').map(s=>s.trim()).filter(Boolean);
+                            if (lines.length >= 2) {
+                                const hallName = lines[1];
+                                if (hallName) names.push(hallName);
+                            }
+                        }
+                    });
+                    const unique = Array.from(new Set(names));
+                    unique.sort((a,b)=>a.localeCompare(b));
+                    return unique;
+                }
+
+                function renderSuggestions(query){
+                    if (!suggestions) return;
+                    if (!query || query.trim() === '') { suggestions.style.display = 'none'; suggestions.innerHTML=''; return; }
+                    if (!hallNamesCache.length) hallNamesCache = extractUniqueHallNames();
+                    const q = query.toLowerCase();
+                    const matches = hallNamesCache.filter(n => n.toLowerCase().includes(q)).slice(0,8);
+                    if (matches.length === 0) { suggestions.style.display = 'none'; suggestions.innerHTML=''; return; }
+                    suggestions.innerHTML = matches.map(m => '<div class="item" data-value="'+m.replace(/"/g,'&quot;')+'">'+m.replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</div>').join('');
+                    suggestions.style.display = 'block';
+                }
+
+                function hideSuggestions(){ if (suggestions) { suggestions.style.display = 'none'; suggestions.innerHTML=''; } }
+
+                if (btn) btn.addEventListener('click', performSearch);
+                if (input) {
+                    input.addEventListener('keydown', function(e){ if (e.key === 'Enter') { e.preventDefault(); performSearch(); hideSuggestions(); }});
+                    input.addEventListener('input', function(){ renderSuggestions(input.value); });
+                    input.addEventListener('focus', function(){ renderSuggestions(input.value); });
+                    document.addEventListener('click', function(ev){ if (!ev.target.closest('.search-suggestions-wrapper')) hideSuggestions(); });
+                }
+
+                if (suggestions) {
+                    suggestions.addEventListener('click', function(e){
+                        const target = e.target.closest('.item');
+                        if (!target) return;
+                        const val = target.getAttribute('data-value') || target.textContent;
+                        const field = document.getElementById('hallSearch');
+                        if (field) field.value = val;
+                        hideSuggestions();
+                        if (btn) btn.click();
+                    });
+                }
+                // Enable clear button after search
+                if (btn) btn.addEventListener('click', function(){ const b = document.getElementById('clearFiltersButton'); if (b) b.disabled = false; });
+                if (input) input.addEventListener('keydown', function(e){ if (e.key === 'Enter'){ const b = document.getElementById('clearFiltersButton'); if (b) b.disabled = false; }});
+            });
+        })();
+
+        // Enable/disable action button based on selection
+        function updateActionButtonsState() {
+            const hasSelection = document.querySelectorAll('.hall-checkbox:checked').length > 0;
+            const btn = document.getElementById('markAvailableBtn');
+            if (btn) btn.disabled = !hasSelection;
+        }
+
+        document.addEventListener('change', function(e){
+            if (e.target && e.target.classList && e.target.classList.contains('hall-checkbox')) {
+                updateActionButtonsState();
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', function(){
+            updateActionButtonsState();
+        });
+
+        // Clear All Archived Hall Filters function
+        function clearAllArchivedHallFilters() {
+            const input = document.getElementById('hallSearch');
+            if (input) input.value = '';
+            const tbody = document.querySelector('#bookingTable tbody');
+            const noRow = tbody ? tbody.querySelector('#noResultsRow') : null;
+            if (noRow) noRow.remove();
+            const rows = document.querySelectorAll('#bookingTable tbody tr');
+            rows.forEach(function(row){ if (row) row.style.display = ''; });
+            const clearBtn = document.getElementById('clearFiltersButton');
+            if (clearBtn) clearBtn.disabled = true;
+        }
+    </script>
+
 
 
     <script>
@@ -428,6 +638,7 @@ $result = $conn->query($query);
                 cb.checked = false; // Uncheck all checkboxes
                 cb.disabled = false; // Enable all checkboxes
             });
+            if (typeof updateActionButtonsState === 'function') updateActionButtonsState();
         }
 
         // Function to handle checkbox clicks
@@ -447,6 +658,7 @@ $result = $conn->query($query);
                     });
                 }
             }
+            if (typeof updateActionButtonsState === 'function') updateActionButtonsState();
         }
     </script>
 

@@ -1,12 +1,12 @@
 <?php
-include 'assets/conn.php';
-include 'assets/header.php';
+include 'assets/conn.php'; // Include the Database Connection File
+include 'assets/header.php'; // Include the Header File
 
 $id = $_SESSION['user_id']; // Logged-in user's ID
-$role = $_SESSION['role'];
+$role = $_SESSION['role']; // Logged-in user's role
 $department_id = $_SESSION['department_id'];
 
-$filters = [];
+$filters = []; // Initialize an empty array to store filters
 $pastBooking = isset($_GET['past_booking']) ? $_GET['past_booking'] : '0';
 
 $semesterBooking = isset($_GET['semester']) ? $_GET['semester'] : '0';
@@ -427,8 +427,62 @@ if ($result === false) {
                 margin-top: 10px;
             }
         }
-    </style>
+        /* Loading overlay inside table during search */
+        .table-container { position: relative; }
+        .loading-overlay {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            z-index: 10;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+        .loading-spinner {
+            width: 2.5rem;
+            height: 2.5rem;
+            border: 0.35rem solid #e0e0e0;
+            border-top-color: #007bff;
+            border-radius: 50%;
+            animation: spin 0.9s linear infinite;
+            margin: 0 auto 10px auto;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        /* Search suggestions dropdown */
+        .search-suggestions-wrapper { position: relative; }
+        #bookingSearchSuggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-top: none;
+            z-index: 20;
+            display: none;
+            max-height: 240px;
+            overflow-y: auto;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        #bookingSearchSuggestions .item { padding: 8px 10px; cursor: pointer; font-size: 14px; }
+        #bookingSearchSuggestions .item:hover { background: #f1f5ff; }
 
+        #bookingSearch{
+            height:35px;
+            position: relative;
+            top:5px;
+        }
+
+        #bookingSearchBtn{
+            height: 38px;
+            width: 38px;
+            position: relative;
+            right:9px;
+        }
     </style>
 </head>
 
@@ -472,6 +526,13 @@ if ($result === false) {
 
                             <div class="row">
                                 <div class="col-6">
+                                    <?php if ($semester === "1" || $pastBooking === "1"): ?>
+                                    <div style="display: flex; align-items: center; gap: 10px; margin: 10px 20px 0 20px;">
+                                        <a href="view_modify_booking.php" class="icon-button gray-button">
+                                            <i class="fa-solid fa-arrow-left"></i> Go Back
+                                        </a>
+                                    </div>
+                                    <?php endif; ?>
                                     <div style="display: flex;  align-items: center; gap: 10px; margin: 20px;">
                                         <?php
                                         if (!$pastBooking):
@@ -480,6 +541,19 @@ if ($result === false) {
                                             <button onclick="modifySelected()" class="icon-button blue-button">
                                                 <i class="fa-solid fa-pen-to-square"></i> Modify
                                             </button>
+
+                                            <?php if ($semesterBooking != "1"): ?>
+                                                <button onclick="deleteSelectedBooking()" class="icon-button red-button">
+                                                    <i class="fa-solid fa-trash"></i> Delete Booking
+                                                </button>
+                                            <?php endif; ?>
+
+                                            <!-- Delete Semester Booking (Red) - Only show for semester bookings -->
+                                            <?php if ($semesterBooking == "1"): ?>
+                                                <button onclick="deleteSemesterBooking()" class="icon-button red-button">
+                                                    <i class="fa-solid fa-trash"></i> Delete Semester Booking
+                                                </button>
+                                            <?php endif; ?>
 
                                             <!-- Achieve Selected (Red) -->
                                             <button onclick="cancelModalPopUp()" class="icon-button gray-button">
@@ -498,28 +572,42 @@ if ($result === false) {
                                     <div
                                         style="display: flex; justify-content: flex-end; align-items: center; gap: 10px; margin: 20px;">
                                         <button id="pastBookingBtn" class="icon-button yellow-button"
-                                            onclick="togglePastBooking()">Show Past Booking</button>
+                                            onclick="togglePastBooking()"><i class="fa-solid fa-clock-rotate-left"></i> Show Past Booking</button>
                                         <?php if ($user_role == 'hod'): ?>
 
                                             <button id="semesterToggleBtn" class="icon-button green-button"
-                                                onclick="toggleSemesterBooking()">Show Semester Booking</button>
+                                                onclick="toggleSemesterBooking()"><i class="fa-solid fa-calendar-week"></i> Show Semester Booking</button>
                                         <?php endif; ?>
 
                                         <!-- Clear All Filters (Yellow) -->
-                                        <?php if ($filterApplied): ?>
-                                            <a href="view_modify_booking.php" class="btn btn-danger">Clear Filters</a>
-                                        <?php else: ?>
-                                            <button class="icon-button redd-button">
-                                                <i class=""></i> Clear Filters
+                                        <button class="icon-button redd-button" onclick="clearAllFilters()">
+                                                <i class="fa-solid fa-broom"></i> Clear Filters
                                             </button>
-                                        <?php endif; ?>
 
                                     </div>
                                 </div>
                             </div>
 
+                            <div style="display: flex; justify-content: flex-end; align-items: center; gap: 10px; margin: 0 20px 20px 20px;">
+                                <!-- Search bar -->
+                                <div class="search-suggestions-wrapper" style="max-width: 300px; width:100%;">
+                                    <div class="input-group">
+                                        <input type="text" id="bookingSearch" class="form-control" placeholder="Search bookings..." aria-label="Search bookings" autocomplete="off">
+                                        <button type="button" id="bookingSearchBtn" class="btn btn-secondary" title="Search">
+                                            <i class="fa-solid fa-magnifying-glass"></i>
+                                        </button>
+                                    </div>
+                                    <div id="bookingSearchSuggestions"></div>
+                                </div>
+                            </div>
 
-                            <div class="table-container" style="max-height: 500px; overflow-y: auto;">
+                            <div class="table-container" style="max-height: 500px; overflow-y: auto; position: relative;">
+                                <div id="loadingOverlay" class="loading-overlay" style="display:none;">
+                                    <div>
+                                        <div class="loading-spinner"></div>
+                                        <div style="color:#007bff; font-weight:600;">Searching...</div>
+                                    </div>
+                                </div>
                                 <table class="table table-bordered" id="bookingTable">
                                     <thead>
                                         <th>Select</th>
@@ -717,18 +805,19 @@ if ($result === false) {
                                                     $bookingId = $row['booking_id'];
                                                     if ($pastBooking): ?>
                                                         <?php
-                                                        $sql_halls = "SELECT  overall_rating, cleanliness, seating, lighting, audio, ac, additional_feedback
+                                                        $sql_halls = "SELECT overall_rating, cleanliness, seating, lighting, audio, ac, additional_feedback
                                                                     FROM hall_feedback 
                                                                     WHERE booking_id = $bookingId";
                                                         $result_halls = $conn->query($sql_halls);
 
-                                                        $halls = [];
-
                                                         if ($result_halls && $result_halls->num_rows > 0) {
-                                                            while ($row = $result_halls->fetch_assoc()) {
-
-                                                                echo $row['overall_rating'];
-                                                            }
+                                                            $feedback_data = $result_halls->fetch_assoc();
+                                                            echo '<div style="text-align: center; cursor: pointer;" onclick="viewFeedbackDetails(' . $bookingId . ')">';
+                                                            echo '<strong>Overall: ' . htmlspecialchars($feedback_data['overall_rating']) . '</strong><br>';
+                                                            echo '<small style="color: #666;">Click to view details</small>';
+                                                            echo '</div>';
+                                                        } else {
+                                                            echo '<div style="text-align: center; color: #999;">No feedback yet</div>';
                                                         }
                                                         ?>
                                                     <?php else:
@@ -812,6 +901,40 @@ if ($result === false) {
                     </div> -->
 
                     <center><button class="btn btn-primary mt-4" type="submit">Submit</button></center>
+                </form>
+
+            </div>
+        </div>
+
+        <!-- Delete Semester Booking Modal -->
+        <div id="deleteSemesterModal" class="modal">
+            <div class="modal-content">
+                <span class="close-modal" onclick="closeModal('deleteSemesterModal')">&times;</span>
+                <center>
+                    <h3 style="color: #dc3545; margin-bottom:15px;">Delete Semester Booking</h3>
+                </center>
+                <div style="text-align: center; margin: 20px 0;">
+                    <i class="fa-solid fa-exclamation-triangle" style="font-size: 48px; color: #dc3545; margin-bottom: 15px;"></i>
+                    <p style="font-size: 16px; margin-bottom: 20px;">
+                        <strong>Are you sure you want to delete this semester booking?</strong>
+                    </p>
+                    <p style="color: #666; font-size: 14px; margin-bottom: 25px;">
+                        This action cannot be undone. All related booking records will be permanently deleted.
+                    </p>
+                </div>
+
+                <form onsubmit="return handleDeleteSemesterBooking(event);">
+                    <!-- Booking ID (hidden) -->
+                    <input type="hidden" name="booking_id" id="delete_booking_id">
+
+                    <div style="display: flex; justify-content: center; gap: 15px;">
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('deleteSemesterModal')">
+                            Cancel
+                        </button>
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fa-solid fa-trash"></i> Delete
+                        </button>
+                    </div>
                 </form>
 
             </div>
@@ -1170,17 +1293,35 @@ FROM employee WHERE department_id = $department_id";
 
         <!-- Feedback Modal -->
         <div id="feedbackModal" class="modal" tabindex="-1">
-            <div class="modal-dialog modal-dialog-centered 	modal-xl">
-                <div class="modal-content" style="width:60%; margin:0% auto">
+            <div class="modal-dialog modal-dialog-centered modal-xl">
+                <div class="modal-content" style="width:70%; margin:0% auto">
                     <div class="modal-header">
-                        <h3 class="modal-title">Feedback</h3>
+                        <h3 class="modal-title">Feedback Details</h3>
                         <button type="button" class="btn-close" onclick="closeFeedbackModal()"></button>
                     </div>
                     <div class="modal-body">
-                        <form action="submit_feedback.php" method="POST">
+                        <!-- Display existing feedback -->
+                        <div id="existingFeedback" style="display: none;">
+                            <h5>Current Feedback:</h5>
+                            <div class="alert alert-info">
+                                <div id="feedbackDisplay"></div>
+                        </div>
+                            <div class="d-flex justify-content-center gap-3 mb-3">
+                                <button type="button" class="btn btn-warning" onclick="editFeedback()">
+                                    <i class="fa-solid fa-edit"></i> Update
+                                </button>
+                                <button type="button" class="btn btn-danger" onclick="deleteFeedback()">
+                                    <i class="fa-solid fa-trash"></i> Delete
+                                </button>
+            </div>
+        </div>
+
+                        <!-- Feedback form (hidden initially) -->
+                        <div id="feedbackForm" style="display: none;">
+                            <form id="feedbackFormElement" action="submit_feedback.php" method="POST">
                             <input type="hidden" id="bookingIdInput" name="booking_id">
-                            <!-- Hidden field for booking ID -->
-                            <h5></h5>
+                                <input type="hidden" id="actionType" name="action" value="submit">
+                                
                             <table class="table">
                                 <tbody>
                                     <tr>
@@ -1243,21 +1384,21 @@ FROM employee WHERE department_id = $department_id";
                             <!-- Additional Feedback -->
                             <div class="mb-3">
                                 <label class="form-label">Do you find any other problem?</label>
-                                <textarea class="form-control" name="additional_feedback"
+                                    <textarea class="form-control" name="additional_feedback" id="additional_feedback"
                                     placeholder="Describe Your Problem"></textarea>
                             </div>
 
-                            <div>
-                                <center><button type="submit" class="btn btn-primary">Submit Feedback</button></center>
+                                <div class="d-flex justify-content-center gap-3">
+                                    <button type="button" class="btn btn-secondary" onclick="cancelEdit()">Cancel</button>
+                                    <button type="submit" class="btn btn-primary" id="submitButton">Submit</button>
                             </div>
                         </form>
-
                     </div>
 
+                    </div>
                 </div>
             </div>
         </div>
-        <?php include 'assets/footer.php' ?>
 
         <!-- JavaScript for Modal -->
         <script>
@@ -1385,19 +1526,179 @@ FROM employee WHERE department_id = $department_id";
                 const selected = document.querySelectorAll('.hall-checkbox:checked');
 
                 if (selected.length === 0) {
-                    alert("Please select a hall to modify.");
+                    alert("Please select a hall to submit feedback.");
                     return;
                 }
 
                 if (selected.length > 1) {
-                    alert("You can modify only one hall at a time.");
+                    alert("You can submit feedback for only one hall at a time.");
                     return;
                 }
 
                 const hallId = selected[0].value;
                 document.getElementById('bookingIdInput').value = hallId;
+                
+                // Show feedback form directly for new feedback
+                showFeedbackForm();
                 document.getElementById('feedbackModal').style.display = 'block';
+            }
 
+            function viewFeedbackDetails(bookingId) {
+                document.getElementById('bookingIdInput').value = bookingId;
+                
+                // Fetch existing feedback data
+                fetchFeedbackData(bookingId);
+                document.getElementById('feedbackModal').style.display = 'block';
+            }
+
+            function fetchFeedbackData(bookingId) {
+                fetch(`get_feedback.php?booking_id=${bookingId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success && data.feedback) {
+                            // Show existing feedback
+                            displayExistingFeedback(data.feedback);
+                        } else {
+                            // Show message that no feedback exists
+                            showNoFeedbackMessage();
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching feedback:', error);
+                        showNoFeedbackMessage();
+                    });
+            }
+
+            function displayExistingFeedback(feedback) {
+                // Hide other sections
+                document.getElementById('feedbackForm').style.display = 'none';
+                
+                // Show existing feedback section
+                document.getElementById('existingFeedback').style.display = 'block';
+                
+                // Populate feedback display
+                const feedbackDisplay = document.getElementById('feedbackDisplay');
+                feedbackDisplay.innerHTML = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Overall Rating:</strong> ${feedback.overall_rating}</p>
+                            <p><strong>Cleanliness:</strong> ${feedback.cleanliness}</p>
+                            <p><strong>Seating:</strong> ${feedback.seating}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Lighting:</strong> ${feedback.lighting}</p>
+                            <p><strong>Audio/Visual:</strong> ${feedback.audio}</p>
+                            <p><strong>AC/Ventilation:</strong> ${feedback.ac}</p>
+                        </div>
+                    </div>
+                    ${feedback.additional_feedback ? `<p><strong>Additional Feedback:</strong> ${feedback.additional_feedback}</p>` : ''}
+                `;
+            }
+
+            function showNoFeedbackMessage() {
+                // Hide other sections
+                document.getElementById('existingFeedback').style.display = 'none';
+                document.getElementById('feedbackForm').style.display = 'none';
+                
+                // Show simple message
+                const feedbackDisplay = document.getElementById('feedbackDisplay');
+                feedbackDisplay.innerHTML = '<div class="alert alert-info text-center"><h5>No feedback available for this booking.</h5></div>';
+                document.getElementById('existingFeedback').style.display = 'block';
+            }
+
+            function showFeedbackForm() {
+                // Hide other sections
+                document.getElementById('existingFeedback').style.display = 'none';
+                
+                // Show feedback form
+                document.getElementById('feedbackForm').style.display = 'block';
+                document.getElementById('actionType').value = 'submit';
+                document.getElementById('submitButton').textContent = 'Submit';
+                
+                // Clear form
+                document.getElementById('feedbackFormElement').reset();
+            }
+
+            function editFeedback() {
+                // Hide other sections
+                document.getElementById('existingFeedback').style.display = 'none';
+                
+                // Show feedback form
+                document.getElementById('feedbackForm').style.display = 'block';
+                document.getElementById('actionType').value = 'update';
+                document.getElementById('submitButton').textContent = 'Update';
+                
+                // Fetch and populate form with existing data
+                fetchFeedbackForEdit();
+            }
+
+            function fetchFeedbackForEdit() {
+                const bookingId = document.getElementById('bookingIdInput').value;
+                fetch(`get_feedback.php?booking_id=${bookingId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success && data.feedback) {
+                            populateFeedbackForm(data.feedback);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching feedback for edit:', error);
+                    });
+            }
+
+            function populateFeedbackForm(feedback) {
+                // Set radio buttons
+                setRadioValue('overall', feedback.overall_rating);
+                setRadioValue('cleanliness', feedback.cleanliness);
+                setRadioValue('seating', feedback.seating);
+                setRadioValue('lighting', feedback.lighting);
+                setRadioValue('audio', feedback.audio);
+                setRadioValue('ac', feedback.ac);
+                
+                // Set additional feedback
+                document.getElementById('additional_feedback').value = feedback.additional_feedback || '';
+            }
+
+            function setRadioValue(name, value) {
+                const radios = document.querySelectorAll(`input[name="${name}"]`);
+                radios.forEach(radio => {
+                    if (radio.value === value) {
+                        radio.checked = true;
+                    }
+                });
+            }
+
+            function cancelEdit() {
+                const bookingId = document.getElementById('bookingIdInput').value;
+                fetchFeedbackData(bookingId);
+            }
+
+            function deleteFeedback() {
+                if (confirm('Are you sure you want to delete this feedback? This action cannot be undone.')) {
+                    const bookingId = document.getElementById('bookingIdInput').value;
+                    
+                    fetch('delete_feedback.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: `booking_id=${bookingId}`
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert('Feedback deleted successfully.');
+                            closeFeedbackModal();
+                            location.reload();
+                        } else {
+                            alert('Error deleting feedback: ' + data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error deleting feedback:', error);
+                        alert('An error occurred while deleting feedback.');
+                    });
+                }
             }
 
             function modifySelected() {
@@ -1425,6 +1726,21 @@ FROM employee WHERE department_id = $department_id";
                     window.location.href = `edit_booking.php?id=${hallId}`;
                 }
             }
+            function deleteSelectedBooking() {
+                const selected = document.querySelectorAll('.hall-checkbox:checked');
+                if (selected.length === 0) {
+                    alert("Please select a booking to delete.");
+                    return;
+                }
+                if (selected.length > 1) {
+                    alert("You can delete only one booking at a time.");
+                    return;
+                }
+                const bookingId = selected[0].value;
+                if (confirm('Are you sure you want to delete this booking? This action cannot be undone.')) {
+                    window.location.href = 'delete_booking.php?id=' + encodeURIComponent(bookingId);
+                }
+            }
             
             function cancelModalPopUp() {
                 const selectedHall = document.querySelector('.hall-checkbox:checked');
@@ -1437,6 +1753,49 @@ FROM employee WHERE department_id = $department_id";
                 const hallId = selectedHall.value;
                 document.getElementById('booking_id').value = hallId; // Set hall ID in form
                 document.getElementById('cancelModal').style.display = 'block';
+            }
+
+            function deleteSemesterBooking() {
+                const selectedHall = document.querySelector('.hall-checkbox:checked');
+
+                if (!selectedHall) {
+                    alert("Please select a semester booking to delete.");
+                    return;
+                }
+
+                const hallId = selectedHall.value;
+                document.getElementById('delete_booking_id').value = hallId; // Set hall ID in form
+                document.getElementById('deleteSemesterModal').style.display = 'block';
+            }
+
+            function handleDeleteSemesterBooking(event) {
+                event.preventDefault();
+
+                const bookingId = document.getElementById('delete_booking_id').value;
+
+                const formData = new FormData();
+                formData.append("booking_id", bookingId);
+
+                fetch("delete_semester_booking.php", {
+                    method: "POST",
+                    body: formData
+                })
+                    .then(response => response.text())
+                    .then(data => {
+                        if (data.trim() === "success") {
+                            alert("Semester booking deleted successfully.");
+                            closeModal('deleteSemesterModal');
+                            location.reload(); // Reload the page to update the list
+                        } else {
+                            alert("Error: " + data);
+                        }
+                    })
+                    .catch(error => {
+                        console.error("Fetch error:", error);
+                        alert("An unexpected error occurred.");
+                    });
+
+                return false;
             }
 
             function showEventImage(imageUrl) {
@@ -1501,7 +1860,7 @@ FROM employee WHERE department_id = $department_id";
                 document.getElementById(modalId).style.display = 'none';
             }
 
-            document.querySelectorAll("#bookedDateFilterForm, #dateRangeFilterForm, #hallDetailFilterForm, #organiserFilterForm, #statusFilterForm").forEach(form => {
+            document.querySelectorAll("#bookedDateFilterForm, #dateRangeFilterForm, #hallDetailFilterForm, #organiserFilterForm, #statusFilterForm, #purposeFilterForm").forEach(form => {
                 form.onsubmit = function (event) {
                     event.preventDefault();
                     const formData = new FormData(this);
@@ -1516,15 +1875,132 @@ FROM employee WHERE department_id = $department_id";
                         }
                     }
 
-                    // Redirect with updated query string
+                    // Redirect with updated query string - preserve current view mode
                     window.location.href = "view_modify_booking.php?" + queryString.toString();
                 };
             });
 
             // Add a new function to handle clearing all filters
             function clearAllFilters() {
-                window.location.href = "view_modify_booking.php";
+                // Preserve the current view mode (semester or past booking)
+                let url = new URL(window.location.href);
+                let semester = url.searchParams.get("semester");
+                let pastBooking = url.searchParams.get("past_booking");
+                
+                // Clear all filter parameters but keep view mode
+                url.search = '';
+                if (semester === "1") {
+                    url.searchParams.set("semester", "1");
+                }
+                if (pastBooking === "1") {
+                    url.searchParams.set("past_booking", "1");
+                }
+                
+                window.location.href = url.toString();
             }
+
+            // Search handling with 2s loading overlay and client-side filter for bookings
+            (function setupBookingSearch(){
+                function performSearch(){
+                    const raw = (document.getElementById('bookingSearch')?.value || '');
+                    const query = raw.trim().toLowerCase();
+                    if (query.length === 0) return;
+                    const overlay = document.getElementById('loadingOverlay');
+                    if (!overlay) return;
+                    overlay.style.display = 'flex';
+                    setTimeout(function(){
+                        try{
+                            const tbody = document.querySelector('#bookingTable tbody');
+                            if (tbody) {
+                                const existing = tbody.querySelector('#noResultsRow');
+                                if (existing) existing.remove();
+                            }
+                            const rows = document.querySelectorAll('#bookingTable tbody tr');
+                            rows.forEach(function(row){
+                                if (!row || !row.cells || row.cells.length === 0) return;
+                                const text = row.textContent.toLowerCase();
+                                row.style.display = text.includes(query) ? '' : 'none';
+                            });
+                            const visibleCount = Array.from(rows).filter(function(r){ return r && r.style.display !== 'none'; }).length;
+                            if (visibleCount === 0 && tbody) {
+                                const thCount = document.querySelectorAll('#bookingTable thead th').length || 1;
+                                const tr = document.createElement('tr');
+                                tr.id = 'noResultsRow';
+                                const td = document.createElement('td');
+                                td.colSpan = thCount;
+                                td.className = 'text-center text-muted';
+                                td.textContent = 'No Results Found';
+                                tr.appendChild(td);
+                                tbody.appendChild(tr);
+                            }
+                        } finally {
+                            overlay.style.display = 'none';
+                        }
+                    }, 2000);
+                }
+
+                document.addEventListener('DOMContentLoaded', function(){
+                    const btn = document.getElementById('bookingSearchBtn');
+                    const input = document.getElementById('bookingSearch');
+                    const suggestions = document.getElementById('bookingSearchSuggestions');
+                    let bookingNamesCache = [];
+
+                    function extractUniqueBookingNames(){
+                        const names = [];
+                        const rows = document.querySelectorAll('#bookingTable tbody tr');
+                        rows.forEach(function(row){
+                            const tds = row.querySelectorAll('td');
+                            if (tds && tds.length >= 3) {
+                                const hallText = (tds[2].innerText || '').trim();
+                                const purposeText = (tds[3].innerText || '').split('\n')[0].trim();
+                                if (hallText) names.push(hallText);
+                                if (purposeText) names.push(purposeText);
+                                // Also check for organiser if column exists
+                                if (tds[5]) {
+                                    const organiserText = (tds[5].innerText || '').split('\n')[0].trim();
+                                    if (organiserText) names.push(organiserText);
+                                }
+                            }
+                        });
+                        const unique = Array.from(new Set(names));
+                        unique.sort((a,b)=>a.localeCompare(b));
+                        return unique;
+                    }
+
+                    function renderSuggestions(query){
+                        if (!suggestions) return;
+                        if (!query || query.trim() === '') { suggestions.style.display = 'none'; suggestions.innerHTML=''; return; }
+                        if (!bookingNamesCache.length) bookingNamesCache = extractUniqueBookingNames();
+                        const q = query.toLowerCase();
+                        const matches = bookingNamesCache.filter(n => n.toLowerCase().includes(q)).slice(0,8);
+                        if (matches.length === 0) { suggestions.style.display = 'none'; suggestions.innerHTML=''; return; }
+                        suggestions.innerHTML = matches.map(m => '<div class="item" data-value="'+m.replace(/"/g,'&quot;')+'">'+m.replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</div>').join('');
+                        suggestions.style.display = 'block';
+                    }
+
+                    function hideSuggestions(){ if (suggestions) { suggestions.style.display = 'none'; suggestions.innerHTML=''; } }
+
+                    if (btn) btn.addEventListener('click', performSearch);
+                    if (input) {
+                        input.addEventListener('keydown', function(e){ if (e.key === 'Enter') { e.preventDefault(); performSearch(); hideSuggestions(); }});
+                        input.addEventListener('input', function(){ renderSuggestions(input.value); });
+                        input.addEventListener('focus', function(){ renderSuggestions(input.value); });
+                        document.addEventListener('click', function(ev){ if (!ev.target.closest('.search-suggestions-wrapper')) hideSuggestions(); });
+                    }
+
+                    if (suggestions) {
+                        suggestions.addEventListener('click', function(e){
+                            const target = e.target.closest('.item');
+                            if (!target) return;
+                            const val = target.getAttribute('data-value') || target.textContent;
+                            const field = document.getElementById('bookingSearch');
+                            if (field) field.value = val;
+                            hideSuggestions();
+                            if (btn) btn.click();
+                        });
+                    }
+                });
+            })();
         </script>
 
         <script>

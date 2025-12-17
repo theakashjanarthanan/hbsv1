@@ -119,7 +119,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["submitroom"])) {
                     <!-- Dropdown for Belongs To -->
                     <label class="form-label mt-2" for="belongs_to">Belongs to:</label>
                     <select name="belongs_to" style="padding: 11px; color:#595c7e;" id="belongs_to" class="form-control" onchange="toggleBelongsTo(this.value)" required>
-                        <option value="">Select</option>
+                        <option value="">--- Select ---</option>
                         <option value="Department">Department</option>
                         <option value="School">School</option>
                         <option value="Administration">Administration</option>
@@ -129,7 +129,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["submitroom"])) {
                     <div id="departmentFields" style="display: none;">
                         <label class="form-label" style="margin-top: 8px;">School Name:</label>
                         <select style="padding: 11px; color:#595c7e;" name="school_name" id="school_name">
-                            <option  value="">All School</option>
+                            <option  value="">--- Select School ---</option>
                             <?php
                             include 'assets/conn.php';
                             $sql = "SELECT DISTINCT school_name, school_id FROM schools";
@@ -144,7 +144,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["submitroom"])) {
 
                         <label class="form-label" style="margin-top: 8px;">Department :</label>
                         <select style="padding: 11px; color:#595c7e;" name="department_name" id="department_name">
-                            <option value="">All Department</option>
+                            <option value="">--- Select Department ---</option>
                         </select>
                     </div>
 
@@ -152,7 +152,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["submitroom"])) {
                     <div id="schoolField" style="display: none;">
                         <label class="form-label" style="margin-top: 8px;">School:</label>
                         <select style="padding: 11px; color:#595c7e;" name="school_name_school" id="school_name_school">
-                            <option value="">All School</option>
+                            <option value="">--- Select School ---</option>
                             <?php
                             include 'assets/conn.php';
                             $sql = "SELECT DISTINCT school_name, school_id FROM schools";
@@ -170,7 +170,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["submitroom"])) {
                     <div id="sectionField" style="display: none;">
                         <label class="form-label" style="margin-top: 8px;">Section:</label>
                         <select style="padding: 11px; color:#595c7e;" name="section">
-                            <option value="">All Section</option>
+                            <option value="">--- Select Section ---</option>
                             <?php
                             include 'assets/conn.php';
                             $sql = "SELECT section_name, section_id FROM section";

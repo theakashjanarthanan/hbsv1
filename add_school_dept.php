@@ -164,7 +164,7 @@ if (isset($_POST['submitroom']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="form-label">
                         <label class="form-label" for="dean-status">Dean Status:</label>
                         <select id="dean-status" name="incharge-status">
-                            <option value="">Select Dean Status</option>
+                            <option value="">--- Select Dean Status ---</option>
                             <option value="Permanent">Permanent</option>
                             <option value="Incharge">Incharge</option>
                         </select>
@@ -179,7 +179,7 @@ if (isset($_POST['submitroom']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div id="departmentFields">
                         <label class="form-label" style="margin-top: 8px;">School Name:</label>
                         <select style="padding:12px;" name="school_name" id="school_name">
-                            <option value="">Select School</option>
+                            <option value="">--- Select School ---</option>
 
                             <?php
                             include 'assets/conn.php';
@@ -240,7 +240,7 @@ if (isset($_POST['submitroom']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="form-label">
                         <label class="form-label" for="hod-status">HOD Status:</label>
                         <select id="hod-status" name="incharge-status">
-                            <option value="" >Select HOD Status</option>
+                            <option value="" >--- Select HOD Status ---</option>
                             <option value="Permanent">Permanent</option>
                             <option value="Incharge">Incharge</option>
                         </select>
@@ -248,6 +248,9 @@ if (isset($_POST['submitroom']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
 
                 </div>
+
+                <br>
+                
                 <!-- <button type="submit" style="margin-left: 35%;" class="btn btn-success btn-lg">Submit</button> -->
                 <!-- Center Alligned Action Buttons -->
                 <div style="display: flex; justify-content: center; gap: 20px;">

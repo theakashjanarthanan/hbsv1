@@ -111,94 +111,193 @@ $pending_count1 = $row['pending_count1'];
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <title>University Hall Booking System</title>
     <style>
+        :root{
+            --brand-primary:#0d6efd;
+            --brand-primary-dark:#0a58ca;
+            --brand-bg:#0d6efd;
+            --text-on-primary:#ffffff;
+            --surface-1:#283745;
+            --surface-2:#34495e;
+            --surface-3:#3d566e;
+            --hover:#1b6ff7;
+            --shadow:0 2px 8px rgba(0,0,0,.12);
+            --radius:10px;
+        }
         body {
             font-family: "Lato", sans-serif;
             margin: 0;
             padding-top: 0;
+            background-color: #f7f9fc;
+            color: #1f2937;
         }
 
-    .navbar {
-    position: fixed;
-    width: 100%;
-    top: 0;
-    z-index: 10;
-    background-color: #007bff;
-    height: auto;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 10px 20px;
-    flex-wrap: wrap;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-}
+        /* Top navbar */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 10;
+            background: linear-gradient(90deg, var(--brand-primary) 0%, var(--brand-primary-dark) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 10px 18px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+            transition: left 0.4s cubic-bezier(0.4, 0, 0.2, 1), width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
 
-.navbar img {
-    height: 40px;
-    margin-right: 15px;
-}
+        /* Keep navbar full width; do not shift when sidebar opens */
+        .navbar .logo-section{
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .navbar img {
+            height: 40px;
+            width: auto;
+        }
+        .title-section {
+            color: var(--text-on-primary);
+            font-size: 20px;
+            margin: 0;
+            flex: 1;
+            text-align: center;
+            white-space: nowrap;
+            letter-spacing: .5px;
+            font-weight: 700;
+            position: relative;
+            bottom:10px;
+        }
+        .user-section {
+            color: var(--text-on-primary);
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 10px;
+            text-align: right;
+            min-width: 0;
+        }
 
-.title-section {
-    color: white;
-    font-size: 20px;
-    margin: 0;
-    flex: 1;
-    text-align: center;
-    white-space: nowrap;
-}
+        .user-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 2px;
+        }
 
-.user-section {
-    color: white;
-    text-align: right;
-    white-space: nowrap;
-}
+        .user-department {
+            font-size: 18px;
+            font-weight: 500;
+            opacity: 0.9;
+            line-height: 1.2;
+        }
 
-/* ↓↓↓ Adjust below 963px */
-@media (max-width: 963px) {
-    .navbar {
-        flex-direction: column;
-        align-items: center;
-        /* gap: 10px; */
-    }
+        .user-greeting {
+            font-size: 18px;
+            font-weight: 400;
+            /* opacity: 0.8; */
+            line-height: 1.2;
+        }
+        .user-badge{
+            background: rgba(255,255,255,.1);
+            color: #fff;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            border: 1px solid rgba(255,255,255,.2);
+        }
+        .logout-link{
+            color: #fff;
+            text-decoration: none;
+            border: 1px solid rgba(255,255,255,.3);
+            padding: 6px 10px;
+            border-radius: 4px;
+            transition: background-color .2s ease, color .2s ease, border-color .2s ease, transform .15s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .logout-link:hover{
+            background: rgba(255, 0, 0, 0.12);
+            border-color: rgba(255,255,255,.55);
+            transform: translateY(-1px);
+        }
+        .logout-link:active{
+            transform: translateY(0);
+        }
+        .badge{
+            display: inline-block;
+            min-width: 22px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            background: #fff;
+            color: #111827;
+            font-weight: 600;
+            border: 1px solid rgba(0,0,0,.1);
+        }
 
-    .title-section {
-        position: relative;
-        transform: none;
-        font-size: 18px;
-        text-align: center;
-    }
+        /* Responsive navbar */
+        @media (max-width: 963px) {
+            .navbar { 
+                flex-wrap: wrap; 
+                padding: 10px; 
+                gap: 8px;
+            }
+            .title-section { 
+                font-size: 18px; 
+                order: 3; 
+                width: 100%; 
+                margin-top: 8px;
+            }
+            .user-section { 
+                gap: 2px;
+            }
+            .user-department {
+                font-size: 13px;
+            }
+            .user-greeting {
+                font-size: 12px;
+            }
+        }
+        @media (max-width: 600px) {
+            .navbar img { height: 32px; }
+            .title-section { font-size: 16px; }
+            .user-section { 
+                gap: 1px;
+                min-width: 120px;
+            }
+            .user-department {
+                font-size: 12px;
+            }
+            .user-greeting {
+                font-size: 11px;
+            }
+            .user-badge {
+                font-size: 11px;
+                padding: 4px 8px;
+            }
+            .logout-link {
+                font-size: 12px;
+                padding: 4px 8px;
+            }
+        }
+        @media (max-width: 400px) {
+            .title-section h3{ font-size: 14px; }
+            .user-section {
+                min-width: 100px;
+            }
+            .user-department {
+                font-size: 11px;
+            }
+            .user-greeting {
+                font-size: 10px;
+            }
+        }
 
-    .user-section {
-        text-align: center;
-        font-size: 14px;
-    }
-}
-
-/* ↓↓↓ Extra tuning for phones or narrow screens */
-@media (max-width: 600px) {
-    .navbar img {
-        height: 30px;
-    }
-
-    .title-section {
-        font-size: 16px;
-    }
-
-    .user-section {
-        font-size: 13px;
-    }
-}
-
-/* ↓↓↓ Ultra-small screens */
-@media (max-width: 400px) {
-    .navbar h3 {
-        font-size: 14px;
-    }
-
-    .user-section{
-        font-size: 12px;
-    }
-}
-       .sidenav {
+        /* Left sidebar - Applied from header-demo.php */
+        .sidenav {
             height: 100%;
             width: 250px;
             position: fixed;
@@ -308,6 +407,8 @@ $pending_count1 = $row['pending_count1'];
             transform: rotate(180deg);
         }
 
+
+
         .toggle-btn {
             position: fixed;
             top: 80px;
@@ -326,6 +427,24 @@ $pending_count1 = $row['pending_count1'];
         .toggle-btn.open {
             left: 0px;
         }
+        
+        /* Subtle custom scrollbar for sidebar */
+        .sidenav::-webkit-scrollbar { width: 8px; }
+        .sidenav::-webkit-scrollbar-thumb { background: rgba(255,255,255,.2); border-radius: 8px; }
+        /* Red light hover/click effect for Logout */
+        .logout-link:hover{
+            background: rgba(220, 53, 69, 0.15);
+            border-color: rgba(220, 53, 69, 0.6);
+            color: #fff;
+            box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.15), 0 4px 12px rgba(220, 53, 69, 0.25);
+        }
+        .logout-link:active{
+            background: #dc3545;
+            border-color: #dc3545;
+            color: #fff;
+            box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.25) inset;
+            transform: translateY(0);
+        }
     </style>
 
 </head>
@@ -338,6 +457,7 @@ $pending_count1 = $row['pending_count1'];
 <nav class="navbar">
     <div class="navbar-section logo-section">
         <img src="image/logo/PU_Logo_Full.png" alt="Pondicherry University Logo">
+        <!-- <span class="user-badge" ><?= htmlspecialchars(strtoupper($user_role)); ?></span> -->
     </div>
 
     <div class="navbar-section title-section">
@@ -346,15 +466,19 @@ $pending_count1 = $row['pending_count1'];
 
     <div class="navbar-section user-section">
         <?php if (isset($username)): ?>
-            <?php if ($user_role == 'dean'): ?>
-                <?= htmlspecialchars($school_name1); ?>
-            <?php elseif ($user_role == 'hod' || $user_role == "prof"): ?>
-                <?= htmlspecialchars($department_name1); ?>
-            <?php endif; ?>
-            <br>
-            Hi, <?= htmlspecialchars($username); ?> | <a style="color: white;" href="logout.php">Logout</a>
+            <div class="user-info">
+                <div class="user-department">
+                    <?php if ($user_role == 'dean'): ?>
+                        <?= htmlspecialchars($school_name1); ?>
+                    <?php elseif ($user_role == 'hod' || $user_role == "prof"): ?>
+                        <?= htmlspecialchars($department_name1); ?>
+                    <?php endif; ?>
+                </div>
+                <div class="user-greeting">Hi, <?= htmlspecialchars($username); ?></div>
+            </div>
+            <a class="logout-link" id="logoutBtn" href="logout.php">Logout</a>
         <?php else: ?>
-            <a href="index.php" style="color: white;">Login</a>
+            <a class="logout-link" href="index.php">Login</a>
         <?php endif; ?>
     </div>
 </nav>
@@ -365,13 +489,11 @@ $pending_count1 = $row['pending_count1'];
         <br>
         <?php if ($user_role == 'prof'): ?>
             <a href="timetable.php" class="<?= ($currentPage == 'timetable.php') ? 'active' : '' ?>">
-                <!-- <i style="margin: 0 5px 5px 0;" class="fa fa-home"></i>Dashboard -->
                 Dashboard
             </a>
         <?php else: ?>
             <?php if ($user_role == 'admin'): ?>
                 <a href="home.php" class="<?= ($currentPage == 'home.php') ? 'active' : '' ?>">
-                <!-- <i style="margin: 0 5px 5px 0;" class="fa fa-home"></i>Dashboard -->
                 Dashboard
             </a>
         <?php else: ?>
@@ -389,19 +511,19 @@ $pending_count1 = $row['pending_count1'];
                     <a href="add_hall.php" class="<?= ($currentPage == 'add_hall.php') ? 'active' : '' ?>">Add Hall</a>
                 <?php endif; ?>
                 <a href="view_modify_hall.php"
-                    class="<?= ($currentPage == 'view_modify_hall.php') ? 'active' : '' ?>">View/Modify Hall</a>
+                    class="<?= ($currentPage == 'view_modify_hall.php') ? 'active' : '' ?>">View / Modify Hall</a>
                 <a href="view_modify_achived_hall.php"
                     class="<?= ($currentPage == 'view_modify_achived_hall.php') ? 'active' : '' ?>">Archive Halls</a>
             </div>
             <?php if ($user_role == 'admin' || $user_role == 'dean'): ?>
                 <button class="dropdown-btn">
-                    School/Departments
+                    School / Departments
                     <i style="margin-left:20px;" class="fa fa-chevron-down"></i>
                 </button>
                 <div class="dropdown-container">
                     <?php if ($user_role == 'admin'): ?>
                         <a href="add_school_dept.php" class="<?= ($currentPage == 'add_school_dept.php') ? 'active' : '' ?>">Add
-                            School/Department</a>
+                            School / Department</a>
                     <?php endif; ?>
                     <a href="view_school.php" class="<?= ($currentPage == 'view_school.php') ? 'active' : '' ?>">View/Modify
                         School</a>
@@ -424,8 +546,8 @@ $pending_count1 = $row['pending_count1'];
         <?php endif; ?>
         <?php if ($user_role != 'admin'): ?>
 
-            <button class="dropdown-btn">
-                Book the hall
+            <button class="dropdown-btn" <?= ($user_role == 'prof') ? 'data-book-hall="true"' : '' ?>>
+                Book The Hall
                 <i style="margin-left:20px;" class="fa fa-chevron-down"></i>
             </button>
             <div class="dropdown-container">
@@ -449,7 +571,7 @@ $pending_count1 = $row['pending_count1'];
                     <a href="no_conflict_bookings.php"
                         class="<?= ($currentPage == 'no_conflict_bookings.php') ? 'active' : '' ?>">Bookings</a>
                     <a href="conflict_bookings.php"
-                        class="<?= ($currentPage == 'conflict_bookings.php') ? 'active' : '' ?>">Bookings conflict</a>
+                        class="<?= ($currentPage == 'conflict_bookings.php') ? 'active' : '' ?>">Bookings Conflict</a>
                 </div>
             <?php endif; ?>
             <?php if ($user_role == 'hod'): ?>
@@ -471,35 +593,80 @@ $pending_count1 = $row['pending_count1'];
 
     <button class="toggle-btn" onclick="toggleNav()">☰</button>
 
-
-  
 <script>
    
         function toggleNav() {
             const sidenav = document.getElementById("mySidenav");
             const toggleBtn = document.querySelector(".toggle-btn");
 
-            if (sidenav.style.width === "250px") {
+            if (sidenav.style.width === "250px" || sidenav.style.width === "") {
                 sidenav.style.width = "0"; // Close sidebar
                 toggleBtn.style.left = "0"; // Move button to the left
-                document.getElementById("main").style.marginLeft = "0";
+                const mainElement = document.getElementById("main");
+                if (mainElement) {
+                    mainElement.style.marginLeft = "0";
+                }
                 toggleBtn.classList.add("open");
+                sessionStorage.setItem('sidebarOpen', 'false');
             } else {
                 sidenav.style.width = "250px";
                 toggleBtn.style.left = "200px";
-                document.getElementById("main").style.marginLeft = "250px";
+                const mainElement = document.getElementById("main");
+                if (mainElement) {
+                    mainElement.style.marginLeft = "250px";
+                }
                 toggleBtn.classList.remove("open");
+                sessionStorage.setItem('sidebarOpen', 'true');
             }
         }
         document.addEventListener('DOMContentLoaded', function () {
+    // Initialize sidebar state from sessionStorage
+    const sidenav = document.getElementById("mySidenav");
+    const toggleBtn = document.querySelector(".toggle-btn");
+    const sidebarState = sessionStorage.getItem('sidebarOpen');
+    
+    // Default to open if no state is stored (first visit)
+    if (sidebarState === null || sidebarState === 'true') {
+        sidenav.style.width = "250px";
+        toggleBtn.style.left = "200px";
+        toggleBtn.classList.remove("open");
+        const mainElement = document.getElementById("main");
+        if (mainElement) {
+            mainElement.style.marginLeft = "250px";
+        }
+    } else {
+        sidenav.style.width = "0";
+        toggleBtn.style.left = "0";
+        toggleBtn.classList.add("open");
+        const mainElement = document.getElementById("main");
+        if (mainElement) {
+            mainElement.style.marginLeft = "0";
+        }
+    }
     const dropdownBtns = document.querySelectorAll('.dropdown-btn');
     const dropdownContainers = document.querySelectorAll('.dropdown-container');
     const dropdownLinks = document.querySelectorAll('.dropdown-container a');
     const dashboardLinks = document.querySelectorAll('.sidenav a[href="home.php"], .sidenav a[href="timetable.php"]');
 
-    const activeMenuIndex = sessionStorage.getItem('activeMenuIndex');
-
-    if (activeMenuIndex !== null) {
+    // Check if user is prof and open "Book the hall" dropdown by default
+    const bookHallBtn = document.querySelector('.dropdown-btn[data-book-hall="true"]');
+    let activeMenuIndex = sessionStorage.getItem('activeMenuIndex');
+    
+    if (bookHallBtn) {
+        // For prof users, always open "Book the hall" dropdown by default
+        const bookHallIndex = Array.from(dropdownBtns).indexOf(bookHallBtn);
+        if (bookHallIndex !== -1) {
+            const bookHallDropdown = bookHallBtn.nextElementSibling;
+            if (bookHallDropdown && bookHallDropdown.classList.contains('dropdown-container')) {
+                bookHallBtn.classList.add('active');
+                bookHallBtn.classList.add('collapsed');
+                bookHallDropdown.classList.add('active');
+                sessionStorage.setItem('activeMenuIndex', bookHallIndex);
+                activeMenuIndex = bookHallIndex; // Update for consistency
+            }
+        }
+    } else if (activeMenuIndex !== null) {
+        // For non-prof users, restore previous state from sessionStorage
         dropdownBtns[activeMenuIndex].classList.add('active');
         dropdownContainers[activeMenuIndex].classList.add('active');
     }

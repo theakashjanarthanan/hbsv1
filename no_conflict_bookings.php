@@ -1,4 +1,6 @@
 <?php
+ob_start();
+if (session_status() === PHP_SESSION_NONE) { session_start(); }
 include 'assets/conn.php';
 include 'assets/header.php';
 $sql = "
@@ -149,7 +151,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['booking_id'], $_POST['
         if (!$stmt) {
             die("Prepare failed: " . $conn->error); // Debugging statement
         }
-    
+        // Build slot pattern for REGEXP (e.g., '(^|,)(1|2|3)(,|$)')
+        $slot_ids = array_map('trim', explode(',', $slot_or_session));
+        $slot_ids = array_filter($slot_ids, fn($s) => $s !== '');
+        $slot_pattern = '(^|,)(' . implode('|', array_map('preg_quote', $slot_ids)) . ')(,|$)';
+
         $stmt->bind_param("isssssss", 
             $hall_id, 
             $start_date, 
@@ -164,8 +170,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['booking_id'], $_POST['
 
         if ($stmt->num_rows > 0) {
             $stmt->close();
-            echo "<script>alert('Error: Conflicting booking already approved for this date range and time slot.');</script>";
-            echo "<script>window.location.href = 'conflict_bookings.php';</script>";
+            $_SESSION['flash_error'] = 'Error: Conflicting booking already approved for this date range and time slot.';
+            header('Location: conflict_bookings.php');
             exit();
         }
         $stmt->close();
@@ -201,7 +207,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['booking_id'], $_POST['
 
         if ($stmt->execute()) {
             $stmt->close();
-            echo "<script>window.location.href = 'update_no_conflicts.php?booking_id=$booking_id&new_status=$new_status';</script>";
+            header('Location: update_no_conflicts.php?booking_id=' . urlencode($booking_id) . '&new_status=' . urlencode($new_status));
             exit();
         }
 
@@ -222,6 +228,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['booking_id'], $_POST['
     <title>Hall Booking - Check Availability</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="assets/design.css" />
     <style>
         .table-wrapper {
@@ -425,6 +432,62 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['booking_id'], $_POST['
     .btn-primary:hover {
         background-color: #0056b3;
     }
+    /* Loading overlay inside table during search */
+    .table-container { position: relative; }
+    .loading-overlay {
+        display: none;
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.8);
+        z-index: 10;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+    }
+    .loading-spinner {
+        width: 2.5rem;
+        height: 2.5rem;
+        border: 0.35rem solid #e0e0e0;
+        border-top-color: #007bff;
+        border-radius: 50%;
+        animation: spin 0.9s linear infinite;
+        margin: 0 auto 10px auto;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    /* Search suggestions dropdown */
+    .search-suggestions-wrapper { position: relative; }
+    #bookingSearchSuggestions {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: #fff;
+        border: 1px solid #ddd;
+        border-top: none;
+        z-index: 20;
+        display: none;
+        max-height: 240px;
+        overflow-y: auto;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+    #bookingSearchSuggestions .item { padding: 8px 10px; cursor: pointer; font-size: 14px; }
+    #bookingSearchSuggestions .item:hover { background: #f1f5ff; }
+
+    #bookingSearch{
+        height:35px;
+        position: relative;
+        top:5px;
+    }
+
+    #bookingSearchBtn{
+        height: 38px;
+        width: 38px;
+        position: relative;
+        right:9px;
+    }
 
     </style>
 </head>
@@ -440,12 +503,30 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['booking_id'], $_POST['
                             <center>
                                 <h3 style="color:#0e00a3">Approve / Reject Bookings</h3><br>
                             </center>
-                            <div class="table-container" style="max-height: 500px; overflow-y: auto;">
+                            <div style="display: flex; justify-content: flex-end; align-items: center; gap: 10px; margin: 0 20px 20px 20px;">
+                                <!-- Search bar -->
+                                <div class="search-suggestions-wrapper" style="max-width: 300px; width:100%;">
+                                    <div class="input-group">
+                                        <input type="text" id="bookingSearch" class="form-control" placeholder="Search bookings..." aria-label="Search bookings" autocomplete="off">
+                                        <button type="button" id="bookingSearchBtn" class="btn btn-secondary" title="Search">
+                                            <i class="fa-solid fa-magnifying-glass"></i>
+                                        </button>
+                                    </div>
+                                    <div id="bookingSearchSuggestions"></div>
+                                </div>
+                            </div>
+                            <div class="table-container" style="max-height: 500px; overflow-y: auto; position: relative;">
+                                <div id="loadingOverlay" class="loading-overlay" style="display:none;">
+                                    <div>
+                                        <div class="loading-spinner"></div>
+                                        <div style="color:#007bff; font-weight:600;">Searching...</div>
+                                    </div>
+                                </div>
                         <table class="table table-bordered" id="bookingTable">
                             <thead>  
                             <?php if ($filterApplied): ?>
                                 <div class="clear-filters">
-                                    <a href="no_conflict_bookings.php" class="btn btn-danger">Clear Filters</a>
+                                    <a href="no_conflict_bookings.php" class="btn btn-danger"><i class="fa-solid fa-broom"></i> Clear Filters</a>
                                 </div>
                             <?php endif; ?>
                             <tr>
@@ -687,14 +768,14 @@ if ($result->num_rows > 0):
 
                                                     <?php if ($row['status'] == 'pending') { ?>
                                                     <button type="submit" name="new_status" value="approved"
-                                                        class="btn btn-outline-success mt-2"><b>Approve</b></button>
+                                                        class="btn btn-outline-success mt-2"><i class="fa-solid fa-check-circle"></i> <b>Approve</b></button>
                                                     <button type="submit" name="new_status" value="rejected"
-                                                        class="btn btn-outline-danger mt-2"><b>Reject</b></button>
+                                                        class="btn btn-outline-danger mt-2"><i class="fa-solid fa-xmark"></i> <b>Reject</b></button>
                                                 <?php } else { ?>
                                                     <button type="submit" name="new_status" value="approved"
-                                                        class="btn btn-outline-success mt-2" disabled><b>Approve</b></button>
+                                                        class="btn btn-outline-success mt-2" disabled><i class="fa-solid fa-check-circle"></i> <b>Approve</b></button>
                                                     <button type="submit" name="new_status" value="rejected"
-                                                        class="btn btn-outline-danger mt-2" disabled><b>Reject</b></button>
+                                                        class="btn btn-outline-danger mt-2" disabled><i class="fa-solid fa-xmark"></i> <b>Reject</b></button>
                                                 <?php } ?>
                                             </form>
 
@@ -1190,11 +1271,112 @@ function toggleFields(purpose) {
         }
 
         // Update the clear filters button event listener
+        if (document.querySelector(".clear-filters a")) {
         document.querySelector(".clear-filters a").addEventListener("click", function (event) {
             event.preventDefault();
             clearAllFilters();
         });
+        }
 
+        // Search handling with 2s loading overlay and client-side filter for bookings
+        (function setupBookingSearch(){
+            function performSearch(){
+                const raw = (document.getElementById('bookingSearch')?.value || '');
+                const query = raw.trim().toLowerCase();
+                if (query.length === 0) return;
+                const overlay = document.getElementById('loadingOverlay');
+                if (!overlay) return;
+                overlay.style.display = 'flex';
+                setTimeout(function(){
+                    try{
+                        const tbody = document.querySelector('#bookingTable tbody');
+                        if (tbody) {
+                            const existing = tbody.querySelector('#noResultsRow');
+                            if (existing) existing.remove();
+                        }
+                        const rows = document.querySelectorAll('#bookingTable tbody tr');
+                        rows.forEach(function(row){
+                            if (!row || !row.cells || row.cells.length === 0) return;
+                            const text = row.textContent.toLowerCase();
+                            row.style.display = text.includes(query) ? '' : 'none';
+                        });
+                        const visibleCount = Array.from(rows).filter(function(r){ return r && r.style.display !== 'none'; }).length;
+                        if (visibleCount === 0 && tbody) {
+                            const thCount = document.querySelectorAll('#bookingTable thead th').length || 1;
+                            const tr = document.createElement('tr');
+                            tr.id = 'noResultsRow';
+                            const td = document.createElement('td');
+                            td.colSpan = thCount;
+                            td.className = 'text-center text-muted';
+                            td.textContent = 'No Results Found';
+                            tr.appendChild(td);
+                            tbody.appendChild(tr);
+                        }
+                    } finally {
+                        overlay.style.display = 'none';
+                    }
+                }, 2000);
+            }
+
+            document.addEventListener('DOMContentLoaded', function(){
+                const btn = document.getElementById('bookingSearchBtn');
+                const input = document.getElementById('bookingSearch');
+                const suggestions = document.getElementById('bookingSearchSuggestions');
+                let bookingNamesCache = [];
+
+                function extractUniqueBookingNames(){
+                    const names = [];
+                    const rows = document.querySelectorAll('#bookingTable tbody tr');
+                    rows.forEach(function(row){
+                        const tds = row.querySelectorAll('td');
+                        if (tds && tds.length >= 5) {
+                            const hallText = (tds[1].innerText || '').trim();
+                            const organiserText = (tds[4].innerText || '').split('\n')[0].trim();
+                            const purposeText = (tds[2].innerText || '').split('\n')[0].trim();
+                            if (hallText) names.push(hallText);
+                            if (organiserText) names.push(organiserText);
+                            if (purposeText) names.push(purposeText);
+                        }
+                    });
+                    const unique = Array.from(new Set(names));
+                    unique.sort((a,b)=>a.localeCompare(b));
+                    return unique;
+                }
+
+                function renderSuggestions(query){
+                    if (!suggestions) return;
+                    if (!query || query.trim() === '') { suggestions.style.display = 'none'; suggestions.innerHTML=''; return; }
+                    if (!bookingNamesCache.length) bookingNamesCache = extractUniqueBookingNames();
+                    const q = query.toLowerCase();
+                    const matches = bookingNamesCache.filter(n => n.toLowerCase().includes(q)).slice(0,8);
+                    if (matches.length === 0) { suggestions.style.display = 'none'; suggestions.innerHTML=''; return; }
+                    suggestions.innerHTML = matches.map(m => '<div class="item" data-value="'+m.replace(/"/g,'&quot;')+'">'+m.replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</div>').join('');
+                    suggestions.style.display = 'block';
+                }
+
+                function hideSuggestions(){ if (suggestions) { suggestions.style.display = 'none'; suggestions.innerHTML=''; } }
+
+                if (btn) btn.addEventListener('click', performSearch);
+                if (input) {
+                    input.addEventListener('keydown', function(e){ if (e.key === 'Enter') { e.preventDefault(); performSearch(); hideSuggestions(); }});
+                    input.addEventListener('input', function(){ renderSuggestions(input.value); });
+                    input.addEventListener('focus', function(){ renderSuggestions(input.value); });
+                    document.addEventListener('click', function(ev){ if (!ev.target.closest('.search-suggestions-wrapper')) hideSuggestions(); });
+                }
+
+                if (suggestions) {
+                    suggestions.addEventListener('click', function(e){
+                        const target = e.target.closest('.item');
+                        if (!target) return;
+                        const val = target.getAttribute('data-value') || target.textContent;
+                        const field = document.getElementById('bookingSearch');
+                        if (field) field.value = val;
+                        hideSuggestions();
+                        if (btn) btn.click();
+                    });
+                }
+            });
+        })();
 
     </script>
 

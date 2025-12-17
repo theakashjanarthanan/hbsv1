@@ -69,7 +69,7 @@ if (isset($_GET['id'])) {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <link rel="stylesheet" href="assets/design.css" />
-    <title>admin Home</title>
+    <title>Edit Booking</title>
     <style>
         .container {
             margin-left: 250px;
@@ -130,7 +130,7 @@ if (isset($_GET['id'])) {
                                 <strong>Semester Period:</strong> 
                                 <?= date('M d, Y', strtotime($semesterStart)) ?> - <?= date('M d, Y', strtotime($semesterEnd)) ?>
                                 <br>
-                                <small class="text-muted">Only dates within this period can be selected for booking updates</small>
+                                <!-- <small class="text-muted">Only dates within this period can be selected for booking updates</small> -->
                             </div>
                         </div>
                         
@@ -141,6 +141,14 @@ if (isset($_GET['id'])) {
                                 value="<?php echo htmlspecialchars($booking['hall_id'] ?? ''); ?>"> <input type="hidden"
                                 name="status" value="<?php echo htmlspecialchars($booking['status']); ?>">
                             <input type="hidden" name="booking_date" value="<?php echo date('Y-m-d'); ?>">
+                            <!-- Preserve organiser details -->
+                            <input type="hidden" name="organiser_id" value="<?php echo htmlspecialchars($booking['organiser_id'] ?? ''); ?>">
+                            <input type="hidden" name="organiser_name" value="<?php echo htmlspecialchars($booking['organiser_name'] ?? ''); ?>">
+                            <input type="hidden" name="organiser_department" value="<?php echo htmlspecialchars($booking['organiser_department'] ?? ''); ?>">
+                            <input type="hidden" name="organiser_email" value="<?php echo htmlspecialchars($booking['organiser_email'] ?? ''); ?>">
+                            <input type="hidden" name="organiser_mobile" value="<?php echo htmlspecialchars($booking['organiser_mobile'] ?? ''); ?>">
+                            <!-- Preserve exact slot_or_session without allowing UI changes -->
+                            <input type="hidden" name="slot_or_session" value="<?php echo htmlspecialchars($booking['slot_or_session'] ?? ''); ?>">
 
                             <div class="form-group mb-3">
                                 <label for="hall_name" class="form-label">Hall Name:</label>
@@ -157,8 +165,7 @@ if (isset($_GET['id'])) {
                                             min="<?= htmlspecialchars($semesterStart) ?>"
                                             max="<?= htmlspecialchars($semesterEnd) ?>"
                                             required
-                                            onchange="handleDateChange(); checkAvailability()" 
-                                            onclick="this.showPicker()">
+                                            readonly onfocus="this.blur()" onkeydown="return false">
                                         <div id="start_date_error" class="error-message"></div>
                                     </div>
                                     <div class="col-md-6 mb-3">
@@ -168,22 +175,20 @@ if (isset($_GET['id'])) {
                                             min="<?= htmlspecialchars($semesterEnd) ?>"
                                             max="<?= htmlspecialchars($semesterEnd) ?>"
                                             required
-                                            onchange="handleDateChange(); checkAvailability()" 
-                                            onclick="this.showPicker()">
+                                            readonly onfocus="this.blur()" onkeydown="return false">
                                         <div id="end_date_error" class="error-message"></div>
                                     </div>
                                 </div>
 
-                                <div class="form-group mb-3">
+                                <div class="form-group mb-3" style="display:none;">
                                     <label class="form-label">Booking Type:</label><br>
                                     <div class="btn-group" role="group" aria-label="Booking Type">
                                         <input type="radio" class="btn-check" name="booking_type" id="session"
-                                            value="session" required onclick="showSessionOptions(); checkAvailability()"
-                                            <?php echo ($booking['slot_or_session'] == 'session') ? 'checked' : ''; ?>>
+                                            value="session" disabled>
                                         <label class="btn btn-outline-primary" for="session">Session</label>
 
                                         <input type="radio" class="btn-check" name="booking_type" id="slot" value="slot"
-                                            required onclick="showSlotOptions(); checkAvailability()" <?php echo ($booking['slot_or_session'] == 'slot') ? 'checked' : ''; ?>>
+                                            disabled>
                                         <label class="btn btn-outline-primary" for="slot">Slot</label>
                                     </div>
                                 </div>
@@ -191,16 +196,14 @@ if (isset($_GET['id'])) {
                                 <div class="form-group mb-3" id="session_options" style="display:none;">
                                     <label class="form-label">Choose Session:</label><br>
                                     <div class="btn-group" role="group" aria-label="Session Choice">
-                                        <input type="radio" class="btn-check" name="session_choice" value="fn" id="fn"
-                                            onchange="checkAvailability()" <?php echo ($booking['slot_or_session'] == '1,2,3,4') ? 'checked' : ''; ?>>
+                                        <input type="radio" class="btn-check" name="session_choice" value="fn" id="fn" disabled>
                                         <label class="btn btn-outline-primary" for="fn">Forenoon</label>
 
-                                        <input type="radio" class="btn-check" name="session_choice" value="an" id="an"
-                                            onchange="checkAvailability()" <?php echo ($booking['slot_or_session'] == '5,6,7,8') ? 'checked' : ''; ?>>
+                                        <input type="radio" class="btn-check" name="session_choice" value="an" id="an" disabled>
                                         <label class="btn btn-outline-primary" for="an">Afternoon</label>
 
                                         <input type="radio" class="btn-check" name="session_choice" value="both"
-                                            id="both" onchange="checkAvailability()" <?php echo ($booking['slot_or_session'] == '1,2,3,4,5,6,7,8') ? 'checked' : ''; ?>>
+                                            id="both" disabled>
                                         <label class="btn btn-outline-primary" for="both">Both</label>
                                     </div>
                                 </div>
@@ -212,28 +215,28 @@ if (isset($_GET['id'])) {
                                         <div class="col-md-3 mb-2">
                                             <div class="form-check">
                                                 <input class="form-check-input" type="checkbox" name="slots[]"
-                                                    id="slot1" value="1" onchange="checkAvailability()" <?php echo (in_array(1, explode(',', $booking['slot_or_session']))) ? 'checked' : ''; ?>>
+                                                    id="slot1" value="1" disabled <?php echo (in_array(1, explode(',', $booking['slot_or_session']))) ? 'checked' : ''; ?>>
                                                 <label class="form-check-label" for="slot1">09:30am</label>
                                             </div>
                                         </div>
                                         <div class="col-md-3 mb-2">
                                             <div class="form-check">
                                                 <input class="form-check-input" type="checkbox" name="slots[]"
-                                                    id="slot2" value="2" onchange="checkAvailability()" <?php echo (in_array(2, explode(',', $booking['slot_or_session']))) ? 'checked' : ''; ?>>
+                                                    id="slot2" value="2" disabled <?php echo (in_array(2, explode(',', $booking['slot_or_session']))) ? 'checked' : ''; ?>>
                                                 <label class="form-check-label" for="slot2">10:30am</label>
                                             </div>
                                         </div>
                                         <div class="col-md-3 mb-2">
                                             <div class="form-check">
                                                 <input class="form-check-input" type="checkbox" name="slots[]"
-                                                    id="slot3" value="3" onchange="checkAvailability()" <?php echo (in_array(3, explode(',', $booking['slot_or_session']))) ? 'checked' : ''; ?>>
+                                                    id="slot3" value="3" disabled <?php echo (in_array(3, explode(',', $booking['slot_or_session']))) ? 'checked' : ''; ?>>
                                                 <label class="form-check-label" for="slot3">11:30am</label>
                                             </div>
                                         </div>
                                         <div class="col-md-3 mb-2">
                                             <div class="form-check">
                                                 <input class="form-check-input" type="checkbox" name="slots[]"
-                                                    id="slot4" value="4" onchange="checkAvailability()" <?php echo (in_array(4, explode(',', $booking['slot_or_session']))) ? 'checked' : ''; ?>>
+                                                    id="slot4" value="4" disabled <?php echo (in_array(4, explode(',', $booking['slot_or_session']))) ? 'checked' : ''; ?>>
                                                 <label class="form-check-label" for="slot4">12:30pm</label>
                                             </div>
                                         </div>
@@ -243,28 +246,28 @@ if (isset($_GET['id'])) {
                                         <div class="col-md-3 mb-2">
                                             <div class="form-check">
                                                 <input class="form-check-input" type="checkbox" name="slots[]"
-                                                    id="slot5" value="5" onchange="checkAvailability()" <?php echo (in_array(5, explode(',', $booking['slot_or_session']))) ? 'checked' : ''; ?>>
+                                                    id="slot5" value="5" disabled <?php echo (in_array(5, explode(',', $booking['slot_or_session']))) ? 'checked' : ''; ?>>
                                                 <label class="form-check-label" for="slot5">01:30pm</label>
                                             </div>
                                         </div>
                                         <div class="col-md-3 mb-2">
                                             <div class="form-check">
                                                 <input class="form-check-input" type="checkbox" name="slots[]"
-                                                    id="slot6" value="6" onchange="checkAvailability()" <?php echo (in_array(6, explode(',', $booking['slot_or_session']))) ? 'checked' : ''; ?>>
+                                                    id="slot6" value="6" disabled <?php echo (in_array(6, explode(',', $booking['slot_or_session']))) ? 'checked' : ''; ?>>
                                                 <label class="form-check-label" for="slot6">02:30pm</label>
                                             </div>
                                         </div>
                                         <div class="col-md-3 mb-2">
                                             <div class="form-check">
                                                 <input class="form-check-input" type="checkbox" name="slots[]"
-                                                    id="slot7" value="7" onchange="checkAvailability()" <?php echo (in_array(7, explode(',', $booking['slot_or_session']))) ? 'checked' : ''; ?>>
+                                                    id="slot7" value="7" disabled <?php echo (in_array(7, explode(',', $booking['slot_or_session']))) ? 'checked' : ''; ?>>
                                                 <label class="form-check-label" for="slot7">03:30pm</label>
                                             </div>
                                         </div>
                                         <div class="col-md-3 mb-2">
                                             <div class="form-check">
                                                 <input class="form-check-input" type="checkbox" name="slots[]"
-                                                    id="slot8" value="8" onchange="checkAvailability()" <?php echo (in_array(8, explode(',', $booking['slot_or_session']))) ? 'checked' : ''; ?>>
+                                                    id="slot8" value="8" disabled <?php echo (in_array(8, explode(',', $booking['slot_or_session']))) ? 'checked' : ''; ?>>
                                                 <label class="form-check-label" for="slot8">04:30pm</label>
                                             </div>
                                         </div>
@@ -289,7 +292,7 @@ if (isset($_GET['id'])) {
                                 </div>
                                 <!-- Event Type Dropdown -->
                                 <div class="mb-3" id="event-type-group"
-                                    style="display: <?php echo ($formData['purpose'] == 'event') ? 'block' : 'none'; ?>;">
+                                    style="display: <?php echo ($booking['purpose'] == 'event') ? 'block' : 'none'; ?>;">
                                     <label for="event_type" class="form-label">Event Type</label>
                                     <select class="form-select" id="event_type" name="event_type">
                                         <option value="guest_lectures_seminars" <?php echo (isset($booking['event_type']) && $booking['event_type'] == 'guest_lectures_seminars') ? 'selected' : ''; ?>>
@@ -390,13 +393,17 @@ if (isset($_GET['id'])) {
 
                                 <div class="text-center mt-4">
                                     <a href="javascript:history.back()" style="padding:10px;"
-                                        class="btn btn-primary">Back</a>
+                                        class="btn btn-primary btn-lg">Back</a>
+
+                                    <button type="button" class="btn btn-danger btn-lg" onclick="deleteBooking()">
+                                    <i class="fa-solid fa-trash"></i>
+                                        Delete Booking
+                                    </button>
 
                                     <button type="submit" class="btn btn-success btn-lg">Update Booking</button>
                                 </div>
                         </form>
                         </fieldset>
-                        <?php include 'assets/footer.php' ?>
 
                         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
                         <script>
@@ -480,6 +487,16 @@ if (isset($_GET['id'])) {
                                     // Hide the alert if the input is valid
                                     document.getElementById("alert").style.display = "none";
                                 }
+                                // Conditional field submission based on purpose
+                                const isEvent = document.getElementById('purpose_event').checked;
+                                const eventTypeField = document.getElementById('event_type');
+                                if (!isEvent) {
+                                    // Purpose is Class: ensure event_type is not submitted
+                                    eventTypeField.setAttribute('disabled', 'disabled');
+                                } else {
+                                    // Purpose is Event: ensure event_type is enabled
+                                    eventTypeField.removeAttribute('disabled');
+                                }
                                 return true;
                             }
                         </script>
@@ -488,6 +505,17 @@ if (isset($_GET['id'])) {
                             function setEndDate() {
                                 const startDate = document.getElementById('start_date').value;
                                 document.getElementById('end_date').value = startDate;
+                            }
+
+                            function deleteBooking() {
+                                const bookingId = document.querySelector('input[name="booking_id"]').value;
+                                if (!bookingId) {
+                                    alert('Booking ID not found.');
+                                    return;
+                                }
+                                if (confirm('Are you sure you want to delete this booking? This action cannot be undone.')) {
+                                    window.location.href = 'delete_booking.php?id=' + encodeURIComponent(bookingId);
+                                }
                             }
 
                             // Show session options or slot options based on user selection
@@ -684,34 +712,8 @@ if (isset($_GET['id'])) {
                                 handleDateChange();
                             });
 
-                            document.querySelectorAll('input[name="slots[]"]').forEach((checkbox) => {
-                                checkbox.addEventListener('change', () => {
-                                    autoSelectSlots();
-                                });
-                            });
-
-                            function autoSelectSlots() {
-                                // Get all slot checkboxes
-                                const slots = document.querySelectorAll('input[name="slots[]"]');
-                                const selectedSlots = [];
-
-                                // Find selected slots
-                                slots.forEach((slot, index) => {
-                                    if (slot.checked) {
-                                        selectedSlots.push(index);
-                                    }
-                                });
-
-                                if (selectedSlots.length >= 2) {
-                                    // Automatically select intermediate slots
-                                    const start = Math.min(...selectedSlots);
-                                    const end = Math.max(...selectedSlots);
-
-                                    for (let i = start; i <= end; i++) {
-                                        slots[i].checked = true;
-                                    }
-                                }
-                            }
+                            // Allow independent selection/deselection of individual slots
+                            // No auto-selection behavior to force intermediate slots
 
 
                         </script>

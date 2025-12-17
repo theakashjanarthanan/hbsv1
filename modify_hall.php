@@ -50,9 +50,12 @@
     ?>
 
     <div id="main">
-        <div class="main-content mt-3">
-            <!-- Seminar Hall Form -->
-            <form method="post" style="margin:0px 100px; background-color:white; padding: 50px; border-radius:15px;" enctype="multipart/form-data">
+        <div class="row justify-content-center">
+            <div class="col-md-10 mt-5">
+                <div class="card shadow-lg">
+                    <div class="card-body">
+                        <!-- Seminar Hall Form -->
+                        <form id="modifyForm" method="post" style="margin:20px 150px; background-color:white; padding: 50px; border-radius:15px;" enctype="multipart/form-data">
 
 
                 <h1 class="mb-4" style="color:#4c37dc; text-align:center;">Modify Hall</h1>
@@ -470,9 +473,11 @@
                 <input type="submit" style="display: block; margin: 0 auto;" name="updateroom" value="Modify">
 
 
-            </form>
+                        </form>
+                    </div>
+                </div>
+            </div>
         </div>
-    </div>
     </div>
     <!-- <footer>
         <p>&copy; 2024 University Hall Booking System | All Rights Reserved</p>
@@ -631,6 +636,14 @@
         });
     </script>
 
+    <!-- Form submission alert -->
+    <script>
+        document.getElementById('modifyForm').addEventListener('submit', function(e) {
+            // Show alert before form submission
+            alert('Hall Modified Successfully!');
+        });
+    </script>
+
 </body>
 
 </html>
@@ -769,7 +782,7 @@ if (isset($_POST['updateroom']) && $_SERVER["REQUEST_METHOD"] == "POST") {
 
     // Execute the query
     if ($stmt->execute()) {
-        echo "<script>window.location.assign('view_modify_hall.php')</script>";
+        echo "<script>window.location.assign('view_modify_hall.php?modified=1')</script>";
     } else {
         echo "Error updating record: " . $stmt->error;
     }

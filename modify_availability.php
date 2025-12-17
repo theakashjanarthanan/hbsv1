@@ -24,8 +24,8 @@ if (isset($_POST['availability_submit']) && $_SERVER['REQUEST_METHOD'] === 'POST
 
     if ($stmt->affected_rows > 0) {
         echo "<script>
-            alert('Record updated successfully');
-            window.location.href = 'view_modify_hall.php';
+            alert('Hall Availability Status Updated Successfully!');
+            window.location.href = 'view_modify_hall.php?availability_updated=1';
         </script>";
     } else {
         echo "<script>

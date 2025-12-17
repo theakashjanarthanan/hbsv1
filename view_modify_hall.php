@@ -3,6 +3,15 @@
 include 'assets/conn.php';
 include 'assets/header.php';
 
+// Fetch latest semester start and end date
+$query = "SELECT * FROM semesters ORDER BY semester_id DESC LIMIT 1";
+$result = mysqli_query($conn, $query);
+$latestSemester = mysqli_fetch_assoc($result);
+
+$semesterStart = date('Y-m-d', strtotime($latestSemester['start_date']));
+$semesterEnd = date('Y-m-d', strtotime($latestSemester['end_date']));
+$today = date('Y-m-d');
+
 // Redirect if user is not logged in
 if (!isset($_SESSION['user_id'])) {
     header("Location: login.php");
@@ -212,16 +221,147 @@ $result = $conn->query($query);
             font-size: 14px;
             cursor: pointer;
         }
+
+        /* Success message styles */
+        .success-message {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #28a745;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            z-index: 9999;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.5s ease-in-out;
+        }
+        /* Loading overlay inside card body during search */
+        .card-body { position: relative; }
+        .loading-overlay {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            z-index: 10;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+        .loading-spinner {
+            width: 2.5rem;
+            height: 2.5rem;
+            border: 0.35rem solid #e0e0e0;
+            border-top-color: #007bff;
+            border-radius: 50%;
+            animation: spin 0.9s linear infinite;
+            margin: 0 auto 10px auto;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        /* Search suggestions dropdown */
+        .search-suggestions-wrapper { position: relative; }
+        #hallSearchSuggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-top: none;
+            z-index: 20;
+            display: none;
+            max-height: 240px;
+            overflow-y: auto;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        #hallSearchSuggestions .item {
+            padding: 8px 10px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        #hallSearchSuggestions .item:hover { background: #f1f5ff; }
+
+        .success-message.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .success-message.fade-out {
+            opacity: 0;
+            transform: translateX(100%);
+        }
+        /* Disable effect for action buttons */
+        .icon-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            filter: grayscale(100%);
+            pointer-events: none;
+        }
+
+        #hallSearchBtn{
+             height: 38px;
+             width: 38px;
+             position: relative;
+             top:3px;
+        }
+
     </style>
     <title>Admin Home</title>
 </head>
 
 <body>
+    <!-- Success Message -->
+    <?php if (isset($_GET['success']) && $_GET['success'] == '1'): ?>
+    <div id="successMessage" class="success-message">
+        <i class="fa-solid fa-check-circle" style="margin-right: 8px;"></i>
+        Hall Added Successfully!
+    </div>
+    <?php endif; ?>
+
+    <!-- Modified Success Message -->
+    <?php if (isset($_GET['modified']) && $_GET['modified'] == '1'): ?>
+    <div id="modifiedMessage" class="success-message">
+        <i class="fa-solid fa-check-circle" style="margin-right: 8px;"></i>
+        Hall Modified Successfully!
+    </div>
+    <?php endif; ?>
+
+    <!-- Availability Updated Success Message -->
+    <?php if (isset($_GET['availability_updated']) && $_GET['availability_updated'] == '1'): ?>
+    <div id="availabilityMessage" class="success-message">
+        <i class="fa-solid fa-check-circle" style="margin-right: 8px;"></i>
+        Hall Availability Status Updated Successfully!
+    </div>
+    <?php endif; ?>
+
+    <!-- Ownership Transfer Success Message -->
+    <?php if (isset($_GET['ownership_transferred']) && $_GET['ownership_transferred'] == '1'): ?>
+    <div id="ownershipMessage" class="success-message">
+        <i class="fa-solid fa-check-circle" style="margin-right: 8px;"></i>
+        Hall Ownership Transfered Successfully!
+    </div>
+    <?php endif; ?>
+
+    <!-- Hall Archived Success Message -->
+    <?php if (isset($_GET['hall_archived']) && $_GET['hall_archived'] == '1'): ?>
+    <div id="archivedMessage" class="success-message">
+        <i class="fa-solid fa-check-circle" style="margin-right: 8px;"></i>
+        Hall Archieved Successfully!
+    </div>
+    <?php endif; ?>
+
     <div id="main">
         <div class="container1 mt-3">
             <div class="table-wrapper">
                 <div class="card">
                     <div class="card-body">
+                        <!-- Loading overlay for search -->
                         <center>
                             <h1 style="color:#170098;">Hall Details</h1>
 
@@ -235,31 +375,41 @@ $result = $conn->query($query);
                                 <div style="display: flex;  align-items: center; gap: 10px; margin: 20px;">
 
                                     <!-- availability (Green) -->
-                                    <button onclick="openAvailabilityPopup()" class="icon-button green-button">
+                                    <button id="availabilityBtn" onclick="openAvailabilityPopup()" class="icon-button green-button" disabled>
                                         <i class="fa-solid fa-check-circle"></i> Availability
                                     </button>
 
                                     <!-- ownership Transfer (Yellow) -->
-                                    <button onclick="openOwnershipPopup()" class="icon-button yellow-button">
+                                    <button id="ownershipBtn" onclick="openOwnershipPopup()" class="icon-button yellow-button" disabled>
                                         <i class="fa-solid fa-handshake"></i> Ownership Transfer
                                     </button>
                                     <?php if ($user_role == 'admin'): ?>
                                         <!-- Modify (Blue) -->
-                                        <button onclick="modifySelected()" class="icon-button blue-button">
+                                        <button id="modifyBtn" onclick="modifySelected()" class="icon-button blue-button" disabled>
                                             <i class="fa-solid fa-pen-to-square"></i> Modify
                                         </button>
                                     <?php endif; ?>
 
                                     <?php if ($user_role != 'admin'): ?>
-                                        <button onclick="openFeatureForm()" class="icon-button blue-button">
+                                        <button id="modifyFeaturesBtn" onclick="openFeatureForm()" class="icon-button blue-button" disabled>
                                             <i class="fa-solid fa-pen-to-square"></i> Modify Features
                                         </button>
                                     <?php endif; ?>
 
                                     <!-- Achieve Selected (Red) -->
-                                    <button onclick="updateMultipleStatus()" class="icon-button red-button">
+                                    <button id="archiveBtn" onclick="updateMultipleStatus()" class="icon-button red-button" disabled>
                                         <i class="fa-solid fa-box-archive"></i> Archive
                                     </button>
+                                    <!-- Inline search next to Archive -->
+                                    <div class="search-suggestions-wrapper" style="max-width: 300px; margin-left:8px; width:100%;">
+                                        <div class="input-group">
+                                            <input type="text" id="hallSearch" class="form-control" placeholder="Search Hall by Hall Name" aria-label="Search halls" autocomplete="off">
+                                            <button type="button" id="hallSearchBtn" class="btn btn-secondary" title="Search">
+                                                <i class="fa-solid fa-magnifying-glass"></i>
+                                            </button>
+                                        </div>
+                                        <div id="hallSearchSuggestions"></div>
+                                    </div>
                                 </div>
                             </div>
 
@@ -275,7 +425,7 @@ $result = $conn->query($query);
                                         Off
                                     </button>
                                     <!-- Clear All Filters (Yellow) -->
-                                    <button type="button" id="clearFiltersButton" class="icon-button " onclick="clearAllFilter()">
+                                    <button type="button" id="clearFiltersButton" class="icon-button " onclick="clearAllFilter()" disabled>
                                         <i class="fa-solid fa-broom"></i> Clear Filters
                                     </button>
 
@@ -284,7 +434,13 @@ $result = $conn->query($query);
                         </div>
 
                         <!-- Table -->
-                        <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+                        <div class="table-responsive" style="max-height: 500px; overflow-y: auto; position: relative;">
+                            <div id="loadingOverlay" class="loading-overlay" style="display:none;">
+                                <div>
+                                    <div class="loading-spinner"></div>
+                                    <div style="color:#007bff; font-weight:600;">Searching...</div>
+                                </div>
+                            </div>
                             <table class="table table-hover align-middle table-bordered" id="bookingTable">
                                 <thead class="table-light sticky-top" style="z-index: 0;">
                                     <tr>
@@ -384,13 +540,14 @@ $result = $conn->query($query);
                             <div class="popup-content" style="width: 475px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px 20px; border-radius: 10px; box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2);">
                                 <span class="close-btn" style="margin-right:12px; font-size: 30px;" onclick="closeFilterPopup('availabilityPopup')">&times;</span>
                                 <h3 style="text-align: center; margin-bottom: 15px; color: #0555ca;">Set Availability</h3>
+                                                           
                                 <h4 class="form-section-title mt-1"></h4>
-
 
                                 <form method="post" id="availabilityForm" action="modify_availability.php">
                                     <input type="hidden" id="hall_id" name="hall_id" value="">
-                                    <div style="display: flex; flex-wrap: wrap; gap: 15px; justify-content:center;">
 
+                                    <!-- Radio buttons inside the form -->
+                                    <div style="display: flex; flex-wrap: wrap; gap: 15px; justify-content:center; margin-bottom: 20px;">
                                         <input type="radio" style="width: 15px;" id="yes-option" name="available" value="Yes" checked>
                                         <label for="yes-option">Yes</label>
 
@@ -399,8 +556,9 @@ $result = $conn->query($query);
                                     </div>
 
                                     <div class="reason-section" style=" text-align: center; margin-top: 20px;">
+                                        <label for="reason-dropdown">Reason:</label> <br>
                                         <select id="reason-dropdown" class="reason-input" name="reason-input" style="padding: 7px; width: 85%;">
-                                            <option value="">All Reason</option>
+                                            <option value="">--- Select Reason ---</option>
                                             <!-- <option value="Under Construction">Under Construction</option> -->
                                             <option value="Temporarily Unavailable">Temporarily Unavailable</option>
                                             <option value="Closed for Renovation">Closed for Renovation</option>
@@ -409,14 +567,35 @@ $result = $conn->query($query);
                                         </select>
                                     </div>
 
-                                    <div id="dateFields" style="display: block; margin-top: 20px; text-align: center;">
-                                        <label for="Start">From:</label>
-                                        <input type="date" id="availabilityStart" name="availabilityStart">
+                                    <br>
 
-                                        <label style="margin-left: 15px;" for="End">To:</label>
-                                        <input type="date" id="availabilityEnd" name="availabilityEnd">
+                                    <!-- Semester Range Banner -->
+                                    <div class="alert alert-info text-center mb-3" role="alert" style="padding: 10px; font-size: 14px;">
+                                        <i class="bi bi-calendar-event me-2"></i>
+                                        <strong>Semester Period:</strong> 
+                                        <?= date('M d, Y', strtotime($semesterStart)) ?> - <?= date('M d, Y', strtotime($semesterEnd)) ?>
+                                        <br>
+                                        <small class="text-muted">Only dates within this period can be selected</small>
                                     </div>
 
+                                    <div id="dateFields" style="display: block; margin-top: 20px; text-align: center;">
+                                        <label for="Start">From:</label>
+                                        <input type="date" 
+                                               id="availabilityStart" 
+                                               name="availabilityStart"
+                                               min="<?= max($semesterStart, $today) ?>"
+                                               max="<?= $semesterEnd ?>"
+                                               onkeydown="return false">
+
+                                        <label style="margin-left: 15px;" for="End">To:</label>
+                                        <input type="date" 
+                                               id="availabilityEnd" 
+                                               name="availabilityEnd"
+                                               min="<?= max($semesterStart, $today) ?>"
+                                               max="<?= $semesterEnd ?>"
+                                               onkeydown="return false">
+                                    </div>
+                                    <br>
                                     <button type="submit" name="availability_submit" style="width: 30%; display: block; margin: 20px auto;" class="btn btn-primary">Submit</button>
                                 </form>
                             </div>
@@ -731,17 +910,14 @@ $result = $conn->query($query);
                                     <input type="hidden" id="selectedHallId" name="selectedHallId" value="">
 
                                     <div style="display: flex; flex-wrap: wrap; gap: 15px; justify-content:center;">
-                                        <input type="radio" style="width: 15px;" id="Active" name="status" value="Active" onchange="toggleReasonSection()" checked>
-                                        <label for="Active">Active</label>
-
-                                        <input type="radio" style="width: 15px; margin-left:4%;" id="Archived" name="status" value="Archived" onchange="toggleReasonSection()">
+                                        <input type="radio" style="width: 15px;" id="Archived" name="status" value="Archived" onchange="toggleReasonSection()" checked>
                                         <label for="Archived">Archived</label>
                                     </div>
 
                                     <!-- Reason dropdown (Hidden initially) -->
                                     <div id="reasonSection" style=" text-align: center; margin-top: 20px;">
                                         <select id="archived-reason" name="reason" class="reason-input" style="padding: 7px; width: 350px;">
-                                            <option value="">All Reason</option>
+                                            <option value="">--- Select Reason ---</option>
                                             <option value="Combined with Neighbour Class">Combined with Neighbour Class</option>
                                             <option value="Convert for Other Purpose">Convert for Other Purpose</option>
                                             <option value="Removed Permanently">Removed Permanently</option>
@@ -774,7 +950,7 @@ $result = $conn->query($query);
                                 <div id="departments" style="display: block;">
                                     <label class="form-label" style="margin-top: 8px; display:block ; text-align: left;">School Name:</label>
                                     <select style="padding: 7px;" name="newSchool" id="newSchool">
-                                        <option value="">Select School</option>
+                                        <option value="">--- Select School ---</option>
                                         <?php
                                         include 'assets/conn.php';
                                         $sql = "SELECT DISTINCT school_name, school_id FROM schools";
@@ -789,7 +965,7 @@ $result = $conn->query($query);
 
                                     <label class="form-label" style="margin-top: 8px; display:block ; text-align: left;">Department :</label>
                                     <select style="padding: 7px;" name="newDepartment" id="newDepartment">
-                                        <option value="">Select Department</option>
+                                        <option value="">--- Select Department ---</option>
                                     </select>
                                 </div>
 
@@ -797,7 +973,7 @@ $result = $conn->query($query);
                                 <div id="schools" style="display: none;">
                                     <label class="form-label" style="margin-top: 8px;">School Name:</label>
                                     <select style="padding: 7px;" name="newSchoolOnly" id="newSchoolOnly">
-                                        <option value="">Select School</option>
+                                        <option value="">--- Select School ---</option>
                                         <?php
                                         include 'assets/conn.php';
                                         $sql = "SELECT DISTINCT school_name, school_id FROM schools";
@@ -815,7 +991,7 @@ $result = $conn->query($query);
                                 <div id="sections" style="display: none;">
                                     <label class="form-label" style="margin-top: 8px;">Section:</label>
                                     <select style="padding: 7px;" name="newSection" id="newSection">
-                                        <option value="">Select Section</option>
+                                        <option value="">--- Select Section ---</option>
                                         <?php
                                         include 'assets/conn.php';
                                         $sql = "SELECT section_name, section_id FROM section";
@@ -948,9 +1124,6 @@ $result = $conn->query($query);
             </div>
         </div>
     </div>
-
-    <?php include 'assets/footer.php' ?>
-
     <!-- Clear form data  -->
     <script>
         function clearForm() {
@@ -972,6 +1145,121 @@ $result = $conn->query($query);
 
     <!-- belongs To   -->
     <script>
+        // Search handling with 2s loading overlay and client-side filter
+        (function setupSearch() {
+            function performSearch() {
+                const raw = (document.getElementById('hallSearch')?.value || '');
+                const query = raw.trim().toLowerCase();
+                if (query.length === 0) {
+                    // If empty, do nothing per requirement (no auto-reset)
+                    return;
+                }
+                const overlay = document.getElementById('loadingOverlay');
+                if (!overlay) return;
+
+                overlay.style.display = 'flex';
+
+                setTimeout(function() {
+                    try {
+                        const tbody = document.querySelector('#bookingTable tbody');
+                        if (tbody) {
+                            const existing = tbody.querySelector('#noResultsRow');
+                            if (existing) existing.remove();
+                        }
+                        const rows = document.querySelectorAll('#bookingTable tbody tr');
+                        rows.forEach(function(row) {
+                            // Skip non-active rows guard
+                            if (!row || !row.cells || row.cells.length === 0) return;
+
+                            const text = row.textContent.toLowerCase();
+                            row.style.display = text.includes(query) ? '' : 'none';
+                        });
+                        // Show placeholder when nothing matches
+                        const visibleCount = Array.from(rows).filter(function(r){ return r && r.style.display !== 'none'; }).length;
+                        if (visibleCount === 0 && tbody) {
+                            const thCount = document.querySelectorAll('#bookingTable thead th').length || 1;
+                            const tr = document.createElement('tr');
+                            tr.id = 'noResultsRow';
+                            const td = document.createElement('td');
+                            td.colSpan = thCount;
+                            td.className = 'text-center text-muted';
+                            td.textContent = 'No Results Found';
+                            tr.appendChild(td);
+                            tbody.appendChild(tr);
+                        }
+                        // Enable the existing Clear Filters button after search
+                        var clearBtn = document.getElementById('clearFiltersButton');
+                        if (clearBtn) clearBtn.disabled = false;
+                    } finally {
+                        overlay.style.display = 'none';
+                    }
+                }, 2000);
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+                const btn = document.getElementById('hallSearchBtn');
+                const input = document.getElementById('hallSearch');
+                const suggestions = document.getElementById('hallSearchSuggestions');
+                let hallNamesCache = [];
+
+                function extractUniqueHallNames() {
+                    const names = [];
+                    const rows = document.querySelectorAll('#bookingTable tbody tr');
+                    rows.forEach(function(row){
+                        // Hall name is in Hall Details column: contains a strong type then line break then hall name
+                        const tds = row.querySelectorAll('td');
+                        if (tds && tds.length >= 3) {
+                            const hallDetailsTd = tds[2];
+                            // Capture text nodes after the first <br> following the type
+                            const lines = hallDetailsTd.innerText.split('\n').map(s => s.trim()).filter(Boolean);
+                            if (lines.length >= 2) {
+                                const name = lines[1];
+                                if (name) names.push(name);
+                            }
+                        }
+                    });
+                    // Unique & sort
+                    const unique = Array.from(new Set(names));
+                    unique.sort((a,b)=>a.localeCompare(b));
+                    return unique;
+                }
+
+                function renderSuggestions(query) {
+                    if (!suggestions) return;
+                    if (!query || query.trim() === '') { suggestions.style.display = 'none'; suggestions.innerHTML=''; return; }
+                    if (!hallNamesCache.length) hallNamesCache = extractUniqueHallNames();
+                    const q = query.toLowerCase();
+                    const matches = hallNamesCache.filter(n => n.toLowerCase().includes(q)).slice(0,8);
+                    if (matches.length === 0) { suggestions.style.display = 'none'; suggestions.innerHTML=''; return; }
+                    suggestions.innerHTML = matches.map(m => '<div class="item" data-value="'+m.replace(/"/g,'&quot;')+'">'+m.replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</div>').join('');
+                    suggestions.style.display = 'block';
+                }
+
+                function hideSuggestions() {
+                    if (suggestions) { suggestions.style.display = 'none'; suggestions.innerHTML=''; }
+                }
+
+                if (btn) btn.addEventListener('click', performSearch);
+                if (input) {
+                    input.addEventListener('keydown', function(e){ if (e.key === 'Enter') { e.preventDefault(); performSearch(); hideSuggestions(); }});
+                    input.addEventListener('input', function(){ renderSuggestions(input.value); });
+                    input.addEventListener('focus', function(){ renderSuggestions(input.value); });
+                    document.addEventListener('click', function(ev){ if (!ev.target.closest('.search-suggestions-wrapper')) hideSuggestions(); });
+                }
+
+                if (suggestions) {
+                    suggestions.addEventListener('click', function(e){
+                        const target = e.target.closest('.item');
+                        if (!target) return;
+                        const val = target.getAttribute('data-value') || target.textContent;
+                        const field = document.getElementById('hallSearch');
+                        if (field) field.value = val;
+                        hideSuggestions();
+                        if (btn) btn.click();
+                    });
+                }
+            });
+        })();
         function toggleBelongsTo(value) {
             if (value === 'Department') {
                 document.getElementById('departmentFields').style.display = 'block';
@@ -991,6 +1279,29 @@ $result = $conn->query($query);
 
     <!-- Archive and modify halls  -->
     <script>
+        // Enable/disable action buttons based on hall selection
+        function updateActionButtonsState() {
+            const hasSelection = document.querySelectorAll('.hall-checkbox:checked').length > 0;
+            const ids = ['availabilityBtn', 'ownershipBtn', 'modifyBtn', 'modifyFeaturesBtn', 'archiveBtn'];
+            ids.forEach(function(id) {
+                const btn = document.getElementById(id);
+                if (btn) {
+                    btn.disabled = !hasSelection;
+                }
+            });
+        }
+
+        // Delegate change event to catch dynamically loaded checkboxes as well
+        document.addEventListener('change', function(e) {
+            if (e.target && e.target.classList && e.target.classList.contains('hall-checkbox')) {
+                updateActionButtonsState();
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            updateActionButtonsState();
+        });
+
         // Function to achieve selected halls
 
         function updateMultipleStatus() {
@@ -1058,12 +1369,6 @@ $result = $conn->query($query);
                 return;
             }
 
-            if (status.value === "Active") {
-                alert("This hall is already active. No changes will be made.");
-                location.reload();
-                return;
-            }
-
             let reason = "";
             if (status.value === "Archived") {
                 reason = reasonDropdown ? reasonDropdown.value.trim() : "";
@@ -1095,8 +1400,8 @@ $result = $conn->query($query);
                 })
                 .then(data => {
                     if (data.success) {
-                        alert('Halls archived successfully!');
-                        location.reload();
+                        alert('Hall Archieved Successfully!');
+                        window.location.href = 'view_modify_hall.php?hall_archived=1';
                     } else {
                         alert('Error: ' + data.message);
                     }
@@ -1178,14 +1483,14 @@ $result = $conn->query($query);
             const clearFiltersButton = document.getElementById('clearFiltersButton');
 
             // Update filter icons
-            hallDetailsIcon.style.filter = filters.hallDetails ? 'brightness(0.5) sepia(1) hue-rotate(300deg) saturate(5)' : 'none';
-            belongsToIcon.style.filter = filters.belongsTo ? 'brightness(0.5) sepia(1) hue-rotate(300deg) saturate(5)' : 'none';
-            featuresIcon.style.filter = filters.features ? 'brightness(0.5) sepia(1) hue-rotate(300deg) saturate(5)' : 'none';
-            statusIcon.style.filter = filters.status ? 'brightness(0.5) sepia(1) hue-rotate(300deg) saturate(5)' : 'none';
+            if (hallDetailsIcon) hallDetailsIcon.style.filter = filters.hallDetails ? 'brightness(0.5) sepia(1) hue-rotate(300deg) saturate(5)' : 'none';
+            if (belongsToIcon) belongsToIcon.style.filter = filters.belongsTo ? 'brightness(0.5) sepia(1) hue-rotate(300deg) saturate(5)' : 'none';
+            if (featuresIcon) featuresIcon.style.filter = filters.features ? 'brightness(0.5) sepia(1) hue-rotate(300deg) saturate(5)' : 'none';
+            if (statusIcon) statusIcon.style.filter = filters.status ? 'brightness(0.5) sepia(1) hue-rotate(300deg) saturate(5)' : 'none';
 
             // Enable/disable clear filters button
             const isAnyFilterApplied = Object.values(filters).some(value => value === true);
-            clearFiltersButton.disabled = !isAnyFilterApplied;
+            if (clearFiltersButton) clearFiltersButton.disabled = !isAnyFilterApplied;
         }
 
         // Function to open filter popups
@@ -1332,12 +1637,15 @@ $result = $conn->query($query);
                 status: false
             };
 
-            // Clear form inputs
+            // Clear form inputs including search
             $('input[type="radio"]').prop('checked', false);
             $('input[type="checkbox"]').prop('checked', false);
             $('input[type="text"]').val('');
             $('select').val('');
 
+            // Explicitly clear search input
+            const searchInput = document.getElementById('hallSearch');
+            if (searchInput) searchInput.value = '';
 
             location.reload();
         }
@@ -1358,11 +1666,23 @@ $result = $conn->query($query);
                 const availabilityEnd = document.getElementById("availabilityEnd");
 
                 function toggleFields() {
+                    const reasonSection = document.querySelector('.reason-section');
+                    const semesterBanner = document.querySelector('.alert.alert-info');
+                    const dateFields = document.getElementById('dateFields');
+                    const submitButton = document.querySelector('button[name="availability_submit"]');
+                    
                     if (yesOption.checked) {
-                        reasonDropdown.disabled = true;
-                        availabilityStart.disabled = true;
-                        availabilityEnd.disabled = true;
+                        // Hide form fields when "Yes" is selected
+                        reasonSection.style.display = 'none';
+                        semesterBanner.style.display = 'none';
+                        dateFields.style.display = 'none';
+                        submitButton.style.display = 'block'; // Keep submit button visible
                     } else {
+                        // Show form fields when "No" is selected
+                        reasonSection.style.display = 'block';
+                        semesterBanner.style.display = 'block';
+                        dateFields.style.display = 'block';
+                        submitButton.style.display = 'block';
                         reasonDropdown.disabled = false;
                         availabilityStart.disabled = false;
                         availabilityEnd.disabled = false;
@@ -1392,11 +1712,51 @@ $result = $conn->query($query);
             }
             // console.log(selectedHall)
 
-
             const hallId = selectedHall[0].value;
             document.getElementById('hall_id').value = hallId;
 
+            // Set up date restrictions when popup opens
+            setupDateRestrictions();
+
             document.getElementById('availabilityPopup').style.display = 'block';
+        }
+
+        // Function to setup date restrictions
+        function setupDateRestrictions() {
+            const availabilityStart = document.getElementById('availabilityStart');
+            const availabilityEnd = document.getElementById('availabilityEnd');
+            
+            const semesterStart = '<?= $semesterStart ?>';
+            const semesterEnd = '<?= $semesterEnd ?>';
+            const today = new Date().toISOString().split('T')[0];
+            
+            // Compute effective minimum date (later of today or semester start)
+            const effectiveMin = (semesterStart < today) ? today : semesterStart;
+            
+            // Set min and max boundaries
+            availabilityStart.min = effectiveMin;
+            availabilityStart.max = semesterEnd;
+            availabilityEnd.min = effectiveMin;
+            availabilityEnd.max = semesterEnd;
+            
+            // Add validation on date change
+            availabilityStart.addEventListener('change', function() {
+                if (this.value < effectiveMin) this.value = effectiveMin;
+                if (this.value > semesterEnd) this.value = semesterEnd;
+                
+                // Update end date min to start date
+                if (availabilityEnd.value < this.value) availabilityEnd.value = this.value;
+                availabilityEnd.min = this.value || effectiveMin;
+            });
+            
+            availabilityEnd.addEventListener('change', function() {
+                if (this.value > semesterEnd) this.value = semesterEnd;
+                if (this.value < effectiveMin) this.value = effectiveMin;
+                
+                // Update start date max to end date
+                if (availabilityStart.value > this.value) availabilityStart.value = this.value;
+                availabilityStart.max = this.value || semesterEnd;
+            });
         }
     </script>
 
@@ -1492,9 +1852,9 @@ $result = $conn->query($query);
                 data: data,
                 success: function(response) {
                     console.log("Response from server:", response); // Debugging line
-                    alert(response);
+                    alert('Hall Ownership Transfered Successfully!');
                     closePopup();
-                    location.reload();
+                    window.location.href = 'view_modify_hall.php?ownership_transferred=1';
                 },
                 error: function() {
                     alert("An error occurred while transferring ownership.");
@@ -1527,6 +1887,8 @@ $result = $conn->query($query);
                 cb.checked = false;
                 cb.disabled = false;
             });
+
+            updateActionButtonsState();
         }
 
         // Function to handle checkbox clicks
@@ -1546,6 +1908,7 @@ $result = $conn->query($query);
                     });
                 }
             }
+            updateActionButtonsState();
         }
     </script>
 
@@ -1649,6 +2012,107 @@ $result = $conn->query($query);
         function clearForm() {
             $(".prefer").prop("checked", false);
         }
+    </script>
+
+    <!-- Success message animation -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const successMessage = document.getElementById('successMessage');
+            const modifiedMessage = document.getElementById('modifiedMessage');
+            const availabilityMessage = document.getElementById('availabilityMessage');
+            const ownershipMessage = document.getElementById('ownershipMessage');
+            const archivedMessage = document.getElementById('archivedMessage');
+            
+            // Handle "Hall Added Successfully" message
+            if (successMessage) {
+                // Show the message with fade-in effect
+                setTimeout(function() {
+                    successMessage.classList.add('show');
+                }, 100);
+                
+                // Hide the message after 5 seconds with fade-out effect
+                setTimeout(function() {
+                    successMessage.classList.add('fade-out');
+                    
+                    // Remove the element from DOM after animation completes
+                    setTimeout(function() {
+                        successMessage.remove();
+                    }, 500);
+                }, 5000);
+            }
+            
+            // Handle "Hall Modified Successfully" message
+            if (modifiedMessage) {
+                // Show the message with fade-in effect
+                setTimeout(function() {
+                    modifiedMessage.classList.add('show');
+                }, 100);
+                
+                // Hide the message after 5 seconds with fade-out effect
+                setTimeout(function() {
+                    modifiedMessage.classList.add('fade-out');
+                    
+                    // Remove the element from DOM after animation completes
+                    setTimeout(function() {
+                        modifiedMessage.remove();
+                    }, 500);
+                }, 5000);
+            }
+            
+            // Handle "Hall Availability Status Updated Successfully" message
+            if (availabilityMessage) {
+                // Show the message with fade-in effect
+                setTimeout(function() {
+                    availabilityMessage.classList.add('show');
+                }, 100);
+                
+                // Hide the message after 5 seconds with fade-out effect
+                setTimeout(function() {
+                    availabilityMessage.classList.add('fade-out');
+                    
+                    // Remove the element from DOM after animation completes
+                    setTimeout(function() {
+                        availabilityMessage.remove();
+                    }, 500);
+                }, 5000);
+            }
+            
+            // Handle "Hall Ownership Transfered Successfully" message
+            if (ownershipMessage) {
+                // Show the message with fade-in effect
+                setTimeout(function() {
+                    ownershipMessage.classList.add('show');
+                }, 100);
+                
+                // Hide the message after 5 seconds with fade-out effect
+                setTimeout(function() {
+                    ownershipMessage.classList.add('fade-out');
+                    
+                    // Remove the element from DOM after animation completes
+                    setTimeout(function() {
+                        ownershipMessage.remove();
+                    }, 500);
+                }, 5000);
+            }
+            
+            // Handle "Hall Archieved Successfully" message
+            if (archivedMessage) {
+                // Show the message with fade-in effect
+                setTimeout(function() {
+                    archivedMessage.classList.add('show');
+                }, 100);
+                
+                // Hide the message after 5 seconds with fade-out effect
+                setTimeout(function() {
+                    archivedMessage.classList.add('fade-out');
+                    
+                    // Remove the element from DOM after animation completes
+                    setTimeout(function() {
+                        archivedMessage.remove();
+                    }, 500);
+                }, 5000);
+            }
+        });
     </script>
 
 </body>

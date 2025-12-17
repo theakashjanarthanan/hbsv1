@@ -27,10 +27,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['employee_ids']) && is
     $stmt->bind_param($types, ...$employee_ids);
 
     if ($stmt->execute()) {
-        echo "<script>alert('Selected employee(s) deleted successfully!'); window.location='view_employees.php';</script>";
+        header('Location: view_employees.php?deleted=1');
         exit();
     } else {
-        echo "<script>alert('Error deleting employee(s).'); window.location='view_employees.php';</script>";
+        header('Location: view_employees.php?msg=Error deleting employee(s).');
         exit();
     }
 } else {

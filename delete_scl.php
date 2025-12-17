@@ -27,7 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['school_ids']) && is_a
     $stmt->bind_param($types, ...$school_ids);
 
     if ($stmt->execute()) {
-        header("Location: view_school.php?msg=Selected school(s) deleted successfully.");
+        header("Location: view_school.php?deleted=1");
         exit();
     } else {
         header("Location: view_school.php?msg=Error deleting selected school(s).");

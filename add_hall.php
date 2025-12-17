@@ -38,7 +38,7 @@ include 'assets/conn.php';  // Include database connection
                 <h4 class="form-section-title">Hall Details</h4>
 
                 <div class="form-group ">
-                    <label class="form-label">Hall Type:</label><br>
+                <label class="form-label" for="hallType">Hall Type:<span style="color:red;font-weight:normal"> *</span></label><br>
                     <div class="btn-group" role="group" aria-label="Room Type">
                         <?php
                         // database connection
@@ -71,19 +71,19 @@ include 'assets/conn.php';  // Include database connection
                     <input type="hidden" id="type_name" name="type_name" value="">
                 </div>
                 <div class="form-group ">
-                    <label class="form-label" for="room_name"> Name:</label>
+                    <label class="form-label" for="room_name"> Hall Name:<span style="color:red;font-weight:normal"> *</span></label><br>
                     <input type="text" id="room_name" name="room_name" placeholder="Hall Name">
                 </div>
                 <div class="form-group ">
                     <div id="additionalFieldContainer"></div>
                 </div>
                 <div class="form-group ">
-                    <label class="form-label" for="capacity">Capacity:</label>
+                    <label class="form-label" for="capacity">Capacity:<span style="color:red;font-weight:normal"> *</span></label><br>
                     <input type="number" id="capacity" name="capacity" placeholder="Capacity">
                 </div>
 
                 <div class="form-group ">
-                    <label class="form-label">Features:</label>
+                    <label class="form-label">Features:<span style="color:red;font-weight:normal"> *</span></label><br>
                     <div class="row ">
 
                         <!-- <!- AC - -->
@@ -200,7 +200,7 @@ include 'assets/conn.php';  // Include database connection
 
                 <div class="form-group ">
 
-                    <label class="form-label">Floor name :</label> <br>
+                    <label class="form-label">Floor:<span style="color:red;font-weight:normal"> *</span></label><br>
                     <input type="radio" style=" margin-right: 2px; margin-left:25px;" name="floor" value="Ground Floor"
                         required>Ground Floor
                     <input type="radio" style=" margin-left:15px;" name="floor" value="First Floor"
@@ -210,7 +210,7 @@ include 'assets/conn.php';  // Include database connection
                 </div>
 
                 <div class="form-group ">
-                    <label class="form-label">Zone :</label><br>
+                    <label class="form-label">Zone :<span style="color:red;font-weight:normal"> *</span></label><br>
                     <input type="radio" style=" margin-left:25px; margin-right:3px;" name="zone" value="East"
                         required>East
                     <input type="radio" style=" margin-left:15px; " name="zone" value="West"
@@ -229,6 +229,7 @@ include 'assets/conn.php';  // Include database connection
                 <div class="form-group " style="margin-top:5px">
                     <label class="form-label">Image:</label>
                     <input type="file" class="form-control" id="imageUpload" name="file">
+                    <small class="form-text text-muted">NOTE: Image Uploading Feature Will be added in future updates.</small>
                 </div>
 
                 <!-- <div class="form-group ">
@@ -242,7 +243,7 @@ include 'assets/conn.php';  // Include database connection
                 </div> -->
 
                 <div class="form-group "style="margin-top:10px">
-                    <label class="form-label">Hall Availability:</label>
+                    <label class="form-label">Hall Availability:<span style="color:red;font-weight:normal"> *</span></label><br>
                     <div class="mb-2">
                         <input type="radio" style=" margin-left:25px;" id="yes-option" name="availability" value="Yes">
                         <label for="yes-option" style="margin-right: 20px;">Yes</label>
@@ -258,10 +259,13 @@ include 'assets/conn.php';  // Include database connection
                     </div>
                 </div>
 
+                <br>
+
                 <div class="form-group ">
                     <!-- Radio buttons for Belongs To -->
                     <h4 class="form-section-title">Belongs to</h4>
                     <div>
+                        <label class="form-label">Belongs to:<span style="color:red;font-weight:normal"> *</span></label><br>
                         <input type="radio" style=" margin-left:25px;" name="belongs_to" value="Department"
                             onclick="toggleBelongsTo('Department')" required> Department
                         <input type="radio" style=" margin-left:15px;" name="belongs_to" value="School"
@@ -483,6 +487,14 @@ include 'assets/conn.php';  // Include database connection
         }
     </script>
 
+    <!-- Form submission alert -->
+    <script>
+        document.getElementById('myForm').addEventListener('submit', function(e) {
+            // Show alert before form submission
+            alert('Hall Added Successfully!');
+        });
+    </script>
+
     <!-- side nav  -->
     <script>
         // Get all the dropdown buttons
@@ -502,6 +514,7 @@ include 'assets/conn.php';  // Include database connection
             });
         });
     </script>
+    
 
 </body>
 

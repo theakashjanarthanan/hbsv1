@@ -145,9 +145,9 @@ function smtp_mailer($to, $subject, $msg)
     $mail->Port = 587;
     $mail->IsHTML(true);
     $mail->CharSet = 'UTF-8';
-    $mail->Username = "pudocs.hod@gmail.com";
-    $mail->Password = "rxtljtgfcpihwhag"; // Your email password
-    $mail->SetFrom("pudocs.hod@gmail.com", "HBS - Pondicherry University");
+    $mail->Username='hbs.superuser@gmail.com';
+    $mail->Password='ubwncbdpsjvvxyus';
+    $mail->SetFrom("hbs.superuser@gmail.com", "HBS - Pondicherry University");
     $mail->Subject = $subject;
     $mail->Body = $msg;
     $mail->AddAddress($to);

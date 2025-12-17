@@ -14,7 +14,7 @@ if (isset($_GET['hall_id'])) {
     $hall_id = intval($_GET['hall_id']);
     $sql = "SELECT h.*, s.*, d.*
     FROM hall_details h
-    LEFT JOIN schools s ON h.school_id = s.school_id
+    LEFT JOIN schools s ON h.school_id = s.school_id    
     LEFT JOIN departments d ON h.department_id = d.department_id
     WHERE h.hall_id = ?";
     $stmt = $conn->prepare($sql);
@@ -56,7 +56,7 @@ function getBookedSlots($conn, $hall_id, $date) {
               FROM bookings 
               WHERE hall_id = ? 
               AND ? BETWEEN start_date AND end_date
-              AND status IN ('approved', 'pending')";
+              AND status IN ('approved', 'pending', 'allow')";
 
     $stmt = $conn->prepare($query);
     $stmt->bind_param("is", $hall_id, $date);
@@ -277,6 +277,21 @@ echo "<!-- End Debug -->\n";
             color: white;
         }
 
+        /* Forward Booking cells (orange) */
+        .calendar-cell.allow {
+            background-color: rgb(255, 214, 102);
+            border: 1px solid black;
+            transition: background-color 0.3s, transform 0.2s, box-shadow 0.3s ease-in-out;
+        }
+
+        .calendar-cell.allow:hover {
+            background-color: rgb(255, 193, 7);
+            border: 1px solid black;
+            transform: scale(1.05);
+            box-shadow: 0 2px 5px rgba(255, 193, 7, 0.6);
+            color: black;
+        }
+
         /* Past cells */
         .calendar-cell.past {
             background-color: rgb(162, 162, 162);
@@ -299,8 +314,58 @@ echo "<!-- End Debug -->\n";
             font-size: 0.6em;
         }
 
+        .calendar-cell.whitish-cell {
+            background-color: rgba(255, 255, 200, 0.3);
+            /* Light yellow overlay */
+            border: 1px solid #f0e68c;
+            /* Optional border */
+        }
+
+        /* Apply whitish-cell class to the statuses as well */
+
+        .calendar-cell.approved.whitish-cell {
+            background-color: rgba(255, 0, 0, 0.58);
+            /* Approved with weekend overlay */
+        }
+
+        .calendar-cell.pending.whitish-cell {
+            background-color: rgba(255, 251, 0, 0.48);
+            /* Pending with weekend overlay */
+        }
+
+        .calendar-cell.available.whitish-cell {
+            background-color:rgba(144, 238, 144, 0.64);
+            /* Available with weekend overlay */
+        }
+
+        /* Past cells with light color */
+        .calendar-cell.allow.whitish-cell {
+            background-color: rgba(255, 214, 102, 0.6);
+            /* Forward Booking with weekend overlay */
+        }
+
+        .calendar-cell.past.whitish-cell {
+            background-color: rgba(162, 162, 162, 0.5);
+            /* Past with weekend overlay */
+            cursor: not-allowed;
+        }
+
+        .calendar-cell.weekend-cell {
+            /* background-color:rgb(212, 212, 212);  */
+            color: #333;
+            /* Optional: Adjust text color for better contrast */
+        }
+
         .weekend-cell {
+            /* background-color: #f0f0f0;  */
             color: red;
+            /* Change the text color for weekends */
+        }
+
+        .day-number.weekend-cell,
+        .day-name.weekend-cell {
+            color: red;
+            /* Apply same color to both day and name */
         }
 
         .time-slot-row {
@@ -506,10 +571,11 @@ echo "<!-- End Debug -->\n";
             <table id="organizer-details-table" border="1" style="display: none;" class="table-wrapper table-bordered">
                     <thead>
                         <tr>
-                            <th style="width:50%">Organiser Details</th>
-                            <th style="width:40%">Purpose</th>
-                            <!-- <th style="width:10%">Participants</th> -->
-                            <th style="width:20%">Booked on</th>
+                            <th style="width:40%">Organiser Details</th>
+                            <th style="width:25%">Purpose</th>
+                            <th style="width:10%">Status</th>
+                            <th style="width:12.5%">Booked On</th>
+                            <th style="width:12.5%">Booking ID</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
@@ -558,6 +624,10 @@ echo "<!-- End Debug -->\n";
             <div class="legend-item">
                 <div class="legend-color" style="background-color: rgb(244, 255, 91); border: 1px solid black;"></div>
                 <span>Pending</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: rgb(255, 214, 102); border: 1px solid black;"></div>
+                <span>Forward Booking</span>
             </div>
             <div class="legend-item">
                 <div class="legend-color" style="background-color: rgb(255, 103, 115); border: 1px solid black;"></div>
@@ -653,11 +723,43 @@ echo "<!-- End Debug -->\n";
                     const bookedSlots = foundDay.bookedSlots.filter(bs => bs.slot === slot);
                     if (bookedSlots.length > 0) {
                         const statuses = [...new Set(bookedSlots.map(bs => bs.status))];
-                        const status = statuses.includes('approved') ? 'approved' : 'pending';
+                        let status = 'pending';
+                        if (statuses.includes('approved')) {
+                            status = 'approved';
+                        } else if (statuses.includes('allow')) {
+                            status = 'allow';
+                        }
+
+                        // Create tooltip text based on status
+                        let tooltipText = '';
+                        if (status === 'available') {
+                            tooltipText = 'Available for Booking';
+                        } else if (status === 'pending') {
+                            // Show detailed organizer info for pending slots
+                            const organiserDetails = bookedSlots.map(bs => bs.organiserDetails);
+                            const names = organiserDetails.map(od => od.name || 'N/A').join(', ');
+                            const departments = organiserDetails.map(od => od.department || 'N/A').join(', ');
+                            tooltipText = `Pending \nName: ${names}\nDepartment: ${departments}`;
+                        } else if (status === 'allow') {
+                            // Show detailed organizer info for forward booking slots
+                            const organiserDetails = bookedSlots.map(bs => bs.organiserDetails);
+                            const names = organiserDetails.map(od => od.name || 'N/A').join(', ');
+                            const departments = organiserDetails.map(od => od.department || 'N/A').join(', ');
+                            tooltipText = `Pending To Forward Booking\nName: ${names}\nDepartment: ${departments}`;
+                        } else if (status === 'approved') {
+                            // Show detailed organizer info for approved slots
+                            const organiserDetails = bookedSlots.map(bs => bs.organiserDetails);
+                            const names = organiserDetails.map(od => od.name || 'N/A').join(', ');
+                            const departments = organiserDetails.map(od => od.department || 'N/A').join(', ');
+                            tooltipText = `Booked\nName: ${names}\nDepartment: ${departments}`;
+                        } else if (status === 'past') {
+                            tooltipText = 'Past/Outside Semester';
+                        }
 
                         return `
                             <div class="calendar-cell ${status} ${dayOfWeek === 0 || dayOfWeek === 6 ? 'whitish-cell' : ''}" 
-                               data-organiser='${JSON.stringify(bookedSlots.map(bs => bs.organiserDetails))}'
+                               data-organiser='${JSON.stringify(bookedSlots.map(bs => ({...bs.organiserDetails, status: bs.status })))}'
+                               title="${tooltipText}"
                                     onclick="showOrganizerDetails(this)">
                                 </div>`;
                     } else {
@@ -665,9 +767,17 @@ echo "<!-- End Debug -->\n";
                     }
                 }
 
+                // Add tooltip for available and past cells
+                let tooltipText = '';
+                if (cellClass === 'available') {
+                    tooltipText = 'Available for Booking';
+                } else if (cellClass === 'past') {
+                    tooltipText = 'Cannot Book the Slots Outside the Semester Range';
+                }
+
                 return `
                     <div class="calendar-cell ${cellClass} ${dayOfWeek === 0 || dayOfWeek === 6 ? 'whitish-cell' : ''}" 
-                        available">
+                        title="${tooltipText}">
                     </div>`;
             } else {
                 return `<div class="calendar-cell white-cell"></div>`;
@@ -703,6 +813,7 @@ function showOrganizerDetails(element) {
 
     if (Array.isArray(organiserDetails) && organiserDetails.length > 0) {
         const status = element.classList.contains('approved') ? 'approved' :
+                       element.classList.contains('allow') ? 'allow' :
                        element.classList.contains('pending') ? 'pending' : 'available';
 
         organiserDetails.forEach(details => {
@@ -735,14 +846,35 @@ const purposeInfo = `
    <b> ${(details.purpose === 'event' ? eventType + '<br>' : '')}</b>
     ${purposeName}
 `;
-            const bookingInfo = `
-                ${details.date || 'N/A'}<br>
-               <span style="color:#0e00a3"> ${details.id_gen || ''}</span>
-            `;
+            const bookedOn = `${details.date || 'N/A'}`;
+            const bookingId = `${details.id_gen || ''}`;
+
+            const statusBadge = (() => {
+                const s = (details.status || '').toString().toLowerCase();
+                let label = s ? s.charAt(0).toUpperCase() + s.slice(1) : 'N/A';
+                let color = '#6c757d';
+                let textColor = '#fff';
+                
+                if (s === 'approved') {
+                    color = '#dc3545';
+                    textColor = '#fff';
+                } else if (s === 'pending') {
+                    color = '#ffc107';
+                    textColor = '#000';
+                } else if (s === 'allow') {
+                    label = 'Forward Booking';
+                    color = '#ffd666';
+                    textColor = '#000';
+                }
+                
+                return `<span style="display:inline-block;padding:2px 8px;border-radius:12px;background:${color};color:${textColor};font-weight:600;">${label}</span>`;
+            })();
             row.innerHTML = `
                 <td>${organiserInfo}</td>
                 <td>${purposeInfo}</td>
-                <td>${bookingInfo}</td>
+                <td>${statusBadge}</td>
+                <td>${bookedOn}</td>
+                <td><span style="color:#0e00a3">${bookingId}</span></td>
             `;
             tableBody.appendChild(row);
         });
@@ -787,14 +919,6 @@ const purposeInfo = `
     </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
 
 </body>
 </html>

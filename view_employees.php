@@ -134,11 +134,113 @@ $sql .= " WHERE employee.school_id = '$school_id'";
             background-color: green;
             color: white;
         }
+
+        /* Success Message Styles */
+        .success-message {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+            z-index: 1000;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            transform: translateX(400px);
+            opacity: 0;
+            transition: all 0.5s ease;
+        }
+
+        .success-message.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        .success-message.fade-out {
+            transform: translateX(400px);
+            opacity: 0;
+        }
+        /* Disable effect for action buttons */
+        .icon-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            filter: grayscale(100%);
+            pointer-events: none;
+        }
+        /* Loading overlay inside table during search */
+        .table-container { position: relative; }
+        .loading-overlay {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            z-index: 10;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+        .loading-spinner {
+            width: 2.5rem;
+            height: 2.5rem;
+            border: 0.35rem solid #e0e0e0;
+            border-top-color: #007bff;
+            border-radius: 50%;
+            animation: spin 0.9s linear infinite;
+            margin: 0 auto 10px auto;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        /* Search suggestions dropdown */
+        .search-suggestions-wrapper { position: relative; }
+        #employeeSearchSuggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-top: none;
+            z-index: 20;
+            display: none;
+            max-height: 240px;
+            overflow-y: auto;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        #employeeSearchSuggestions .item { padding: 8px 10px; cursor: pointer; font-size: 14px; }
+        #employeeSearchSuggestions .item:hover { background: #f1f5ff; }
+
+        #employeeSearch{
+            height:35px;
+            position: relative;
+            top:5px;
+        }
+
+        #employeeSearchBtn{
+            height: 38px;
+             width: 38px;
+             position: relative;
+             top:9px;
+        }
     </style>
     <title>Admin Home</title>
 </head>
 
 <body>
+    <!-- Success Messages -->
+    <div id="modifyMessage" class="success-message" style="display: none;">
+        <i class="fa-solid fa-check-circle" style="margin-right: 8px;"></i>
+        Employee Modified Successfully!
+    </div>
+
+    <div id="deleteMessage" class="success-message" style="display: none;">
+        <i class="fa-solid fa-check-circle" style="margin-right: 8px;"></i>
+        Employee Deleted Successfully!
+    </div>
     <div id="main">
         <div class="container1 mt-3">
             <div class="table-wrapper">
@@ -151,14 +253,24 @@ $sql .= " WHERE employee.school_id = '$school_id'";
                         <div class="row">
                             <div class="col-8">
                                 <div style="display: flex; align-items: center; gap: 10px; margin: 20px;">
-                                                              <!-- Modify (Blue) -->
-                            <button onclick="modifySelected()" class="icon-button blue-button">
-                                <i class="fa-solid fa-pen-to-square"></i> Modify
-                            </button>
-                            <button onclick="deleteEmployee()" class="icon-button red-button">
-                                <i class="fa-solid fa-box-archive"></i> Delete
-                            </button>
-                            </div>
+                                    <!-- Modify (Blue) -->
+                                    <button id="modifyBtn" onclick="modifySelected()" class="icon-button blue-button" disabled>
+                                        <i class="fa-solid fa-pen-to-square"></i> Modify
+                                    </button>
+                                    <button id="deleteBtn" onclick="deleteEmployee()" class="icon-button red-button" disabled>
+                                        <i class="fa-solid fa-box-archive"></i> Delete
+                                    </button>
+                                    <!-- Inline search next to Delete -->
+                                    <div class="search-suggestions-wrapper" style="max-width: 300px; margin-left:8px; width:100%;">
+                                        <div class="input-group">
+                                            <input type="text" id="employeeSearch" class="form-control" placeholder="Search Employee by Name" aria-label="Search employees" autocomplete="off">
+                                            <button type="button" id="employeeSearchBtn" class="btn btn-secondary" title="Search">
+                                                <i class="fa-solid fa-magnifying-glass"></i>
+                                            </button>
+                                        </div>
+                                        <div id="employeeSearchSuggestions"></div>
+                                    </div>
+                                </div>
                             </div>
                             <div class="col-4">
                                 <!-- Toggle Button -->
@@ -167,12 +279,22 @@ $sql .= " WHERE employee.school_id = '$school_id'";
                                     <button id="multiSelectToggle" onclick="toggleMultiSelect()" style="padding: 5px 10px; border: none; border-radius: 5px; background-color: #ccc; cursor: pointer;">
                                         Off
                                     </button>
+                                    <!-- Clear All Filters -->
+                                    <button type="button" id="clearFiltersButton" class="icon-button" onclick="clearAllEmployeeFilters()" disabled>
+                                        <i class="fa-solid fa-broom"></i> Clear Filters
+                                    </button>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Table -->
-                        <div class="table-container" style="max-height: 500px; overflow-y: auto;">
+                        <div class="table-container" style="max-height: 500px; overflow-y: auto; position: relative;">
+                            <div id="loadingOverlay" class="loading-overlay" style="display:none;">
+                                <div>
+                                    <div class="loading-spinner"></div>
+                                    <div style="color:#007bff; font-weight:600;">Searching...</div>
+                                </div>
+                            </div>
                             <table class="table table-bordered" id="bookingTable">
 
                                 <!-- Fixed thead -->
@@ -250,10 +372,142 @@ $sql .= " WHERE employee.school_id = '$school_id'";
         </div>
     </div>
 
-    <?php include 'assets/footer.php'; ?>
-
 </body>
 <script>
+    // Search handling with 2s loading overlay and client-side filter for employees, plus suggestions
+    (function setupEmployeeSearch(){
+        function performSearch(){
+            const raw = (document.getElementById('employeeSearch')?.value || '');
+            const query = raw.trim().toLowerCase();
+            if (query.length === 0) return; // only search if input has text
+            const overlay = document.getElementById('loadingOverlay');
+            if (!overlay) return;
+            overlay.style.display = 'flex';
+            setTimeout(function(){
+                try{
+                    const tbody = document.querySelector('#bookingTable tbody');
+                    if (tbody) {
+                        const existing = tbody.querySelector('#noResultsRow');
+                        if (existing) existing.remove();
+                    }
+                    const rows = document.querySelectorAll('#bookingTable tbody tr');
+                    rows.forEach(function(row){
+                        if (!row || !row.cells || row.cells.length === 0) return;
+                        const text = row.textContent.toLowerCase();
+                        row.style.display = text.includes(query) ? '' : 'none';
+                    });
+                    // Show "No Results Found" when all rows are hidden
+                    const visibleCount = Array.from(rows).filter(function(r){ return r && r.style.display !== 'none'; }).length;
+                    if (visibleCount === 0 && tbody) {
+                        const thCount = document.querySelectorAll('#bookingTable thead th').length || 1;
+                        const tr = document.createElement('tr');
+                        tr.id = 'noResultsRow';
+                        const td = document.createElement('td');
+                        td.colSpan = thCount;
+                        td.className = 'text-center text-muted';
+                        td.textContent = 'No Results Found';
+                        tr.appendChild(td);
+                        tbody.appendChild(tr);
+                    }
+                } finally {
+                    overlay.style.display = 'none';
+                }
+            }, 2000);
+        }
+
+        document.addEventListener('DOMContentLoaded', function(){
+            const btn = document.getElementById('employeeSearchBtn');
+            const input = document.getElementById('employeeSearch');
+            const suggestions = document.getElementById('employeeSearchSuggestions');
+            let employeeNamesCache = [];
+
+            function extractUniqueEmployeeNames(){
+                const names = [];
+                const rows = document.querySelectorAll('#bookingTable tbody tr');
+                rows.forEach(function(row){
+                    const tds = row.querySelectorAll('td');
+                    if (tds && tds.length >= 2) {
+                        // Employee name is bold inside the first column of details
+                        const nameLine = (tds[1].innerText || '').split('\n')[0].trim();
+                        if (nameLine) names.push(nameLine);
+                    }
+                });
+                const unique = Array.from(new Set(names));
+                unique.sort((a,b)=>a.localeCompare(b));
+                return unique;
+            }
+
+            function renderSuggestions(query){
+                if (!suggestions) return;
+                if (!query || query.trim() === '') { suggestions.style.display = 'none'; suggestions.innerHTML=''; return; }
+                if (!employeeNamesCache.length) employeeNamesCache = extractUniqueEmployeeNames();
+                const q = query.toLowerCase();
+                const matches = employeeNamesCache.filter(n => n.toLowerCase().includes(q)).slice(0,8);
+                if (matches.length === 0) { suggestions.style.display = 'none'; suggestions.innerHTML=''; return; }
+                suggestions.innerHTML = matches.map(m => '<div class="item" data-value="'+m.replace(/"/g,'&quot;')+'">'+m.replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</div>').join('');
+                suggestions.style.display = 'block';
+            }
+
+            function hideSuggestions(){ if (suggestions) { suggestions.style.display = 'none'; suggestions.innerHTML=''; } }
+
+            if (btn) btn.addEventListener('click', performSearch);
+            if (input) {
+                input.addEventListener('keydown', function(e){ if (e.key === 'Enter') { e.preventDefault(); performSearch(); hideSuggestions(); }});
+                input.addEventListener('input', function(){ renderSuggestions(input.value); });
+                input.addEventListener('focus', function(){ renderSuggestions(input.value); });
+                document.addEventListener('click', function(ev){ if (!ev.target.closest('.search-suggestions-wrapper')) hideSuggestions(); });
+            }
+
+            if (suggestions) {
+                suggestions.addEventListener('click', function(e){
+                    const target = e.target.closest('.item');
+                    if (!target) return;
+                    const val = target.getAttribute('data-value') || target.textContent;
+                    const field = document.getElementById('employeeSearch');
+                    if (field) field.value = val;
+                    hideSuggestions();
+                    if (btn) btn.click();
+                });
+            }
+            // Enable clear button after search
+            if (btn) btn.addEventListener('click', function(){ const b = document.getElementById('clearFiltersButton'); if (b) b.disabled = false; });
+            if (input) input.addEventListener('keydown', function(e){ if (e.key === 'Enter'){ const b = document.getElementById('clearFiltersButton'); if (b) b.disabled = false; }});
+        });
+    })();
+
+    // Enable/disable action buttons based on selection
+    function updateActionButtonsState() {
+        const hasSelection = document.querySelectorAll('.hall-checkbox:checked').length > 0;
+        const ids = ['modifyBtn', 'deleteBtn'];
+        ids.forEach(function(id) {
+            const btn = document.getElementById(id);
+            if (btn) btn.disabled = !hasSelection;
+        });
+    }
+
+    document.addEventListener('change', function(e){
+        if (e.target && e.target.classList && e.target.classList.contains('hall-checkbox')) {
+            updateActionButtonsState();
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', function(){
+        updateActionButtonsState();
+    });
+
+    // Clear All Employee Filters function
+    function clearAllEmployeeFilters() {
+        const input = document.getElementById('employeeSearch');
+        if (input) input.value = '';
+        const tbody = document.querySelector('#bookingTable tbody');
+        const noRow = tbody ? tbody.querySelector('#noResultsRow') : null;
+        if (noRow) noRow.remove();
+        const rows = document.querySelectorAll('#bookingTable tbody tr');
+        rows.forEach(function(row){ if (row) row.style.display = ''; });
+        const clearBtn = document.getElementById('clearFiltersButton');
+        if (clearBtn) clearBtn.disabled = true;
+    }
+
     function modifySelected() {
         const selected = document.querySelectorAll('.hall-checkbox:checked');
 
@@ -347,6 +601,34 @@ $sql .= " WHERE employee.school_id = '$school_id'";
         document.body.appendChild(form);
         form.submit();
     }
+</script>
+
+<script>
+    // Success message animation
+    document.addEventListener('DOMContentLoaded', function() {
+        const modifyMessage = document.getElementById('modifyMessage');
+        const deleteMessage = document.getElementById('deleteMessage');
+
+        const urlParams = new URLSearchParams(window.location.search);
+
+        if (urlParams.get('modified') === '1' && modifyMessage) {
+            modifyMessage.style.display = 'flex';
+            setTimeout(function() { modifyMessage.classList.add('show'); }, 100);
+            setTimeout(function() {
+                modifyMessage.classList.add('fade-out');
+                setTimeout(function() { modifyMessage.remove(); }, 500);
+            }, 5000);
+        }
+
+        if (urlParams.get('deleted') === '1' && deleteMessage) {
+            deleteMessage.style.display = 'flex';
+            setTimeout(function() { deleteMessage.classList.add('show'); }, 100);
+            setTimeout(function() {
+                deleteMessage.classList.add('fade-out');
+                setTimeout(function() { deleteMessage.remove(); }, 500);
+            }, 5000);
+        }
+    });
 </script>
 
 

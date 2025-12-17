@@ -21,7 +21,10 @@ $booking_date = $_POST['booking_date'];
 $status = 'pending';
 
 // Determine the value of slot_or_session based on the form input
-if (isset($_POST['booking_type']) && $_POST['booking_type'] == 'session') {
+// Prefer exact value if provided (e.g., from edit_booking.php hidden field)
+if (isset($_POST['slot_or_session']) && $_POST['slot_or_session'] !== '') {
+    $slot_or_session = $_POST['slot_or_session'];
+} else if (isset($_POST['booking_type']) && $_POST['booking_type'] == 'session') {
     if (isset($_POST['session_choice'])) {
         $session_choice = $_POST['session_choice'];
         switch ($session_choice) {
@@ -112,8 +115,16 @@ if (isHallAvailable($conn, $hall_id, $start_date, $end_date, $booking_id)) {
         $booking_id);
 
     if ($stmt->execute()) {
-        // Redirect to the view_modify_bookings.php page
-        header("Location: view_modify_booking.php");
+        // If coming from edit_booking.php, show success alert and go to listings
+        $referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '';
+        if ($referer && strpos($referer, 'edit_booking.php') !== false) {
+            echo "<script>alert('Booking updated successfully.'); window.location.href='view_modify_booking.php';</script>";
+            exit();
+        }
+
+        // Otherwise, redirect back to the referring page (fallback to view_modify_booking.php)
+        $redirect = $referer !== '' ? $referer : 'view_modify_booking.php';
+        header("Location: " . $redirect);
         exit();
     } else {
         // Handle errors

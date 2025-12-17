@@ -197,8 +197,6 @@ if (isset($conn)) {
         </div>
     </div>
 
-    <?php include 'assets/footer.php'; ?>
-
 </body>
 <script>
     function modifySelected() {

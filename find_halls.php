@@ -364,7 +364,6 @@ $rooms_result = mysqli_query($conn, $rooms_query);
                         </div>
                     </div>
                 </div>
-                <?php include 'assets/footer.php' ?>
 
                 <script>
                     document.addEventListener('DOMContentLoaded', function () {

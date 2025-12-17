@@ -112,7 +112,7 @@ if(isset($_POST["reset"])){
         ?>
         <script>
             window.location.replace("index.php");
-            alert("<?php echo "your password has been succesful reset"?>");
+            alert("<?php echo "Your password has been successfully reset. Please log in using your new password."?>");
         </script>
         <?php
     }else{

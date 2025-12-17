@@ -1,6 +1,14 @@
 <?php
 include('assets/conn.php');
 
+// Fetch latest semester start and end date
+$query = "SELECT * FROM semesters ORDER BY semester_id DESC LIMIT 1";
+$result = mysqli_query($conn, $query);
+$latestSemester = mysqli_fetch_assoc($result);
+
+$semesterStart = date('Y-m-d', strtotime($latestSemester['start_date']));
+$semesterEnd = date('Y-m-d', strtotime($latestSemester['end_date']));
+
 if (isset($_GET['hall_id'])) {
     $hall_id = intval($_GET['hall_id']); // Ensure the hall_id is an integer
 
@@ -72,36 +80,61 @@ function getBookedSlots($conn, $hall_id, $date) {
 }
 
     
+    // Initialize calendar data array
     $calendar = [];
-    $currentYear = date('Y');
-    $currentMonth = date('n'); // Get the current month as an integer (1-12)
-    $monthsToView = 3; // Number of months to display (including the current month)
-    
-    // Loop through the months
-    for ($month = $currentMonth; $month < $currentMonth + $monthsToView; $month++) {
-        // If the month exceeds 12, move to the next year
-        $adjustedMonth = $month > 12 ? $month - 12 : $month;
-        $adjustedYear = $month > 12 ? $currentYear + 1 : $currentYear;
-    
-        $daysInMonth = getDaysInMonth($adjustedYear, $adjustedMonth);
-    
+
+    // Parse semester start and end dates
+    $semesterStartObj = new DateTime($semesterStart);
+    $semesterEndObj = new DateTime($semesterEnd);
+
+    // Get the month and year of semester start and end
+    $startMonth = (int)$semesterStartObj->format('n');
+    $startYear = (int)$semesterStartObj->format('Y');
+    $endMonth = (int)$semesterEndObj->format('n');
+    $endYear = (int)$semesterEndObj->format('Y');
+
+    // Calculate months to view based on semester range
+    $monthsToView = 0;
+    $currentMonth = $startMonth;
+    $currentYear = $startYear;
+
+    // Loop through the months within semester range to build calendar data
+    while (($currentYear < $endYear) || ($currentYear == $endYear && $currentMonth <= $endMonth)) {
+        // Get number of days in the current month
+        $daysInMonth = getDaysInMonth($currentYear, $currentMonth);
+
+        // Initialize month calendar structure
         $monthCalendar = [
-            'year' => $adjustedYear,
-            'month' => $adjustedMonth,
+            'year' => $currentYear,
+            'month' => $currentMonth,
             'days' => []
         ];
-    
-        // Loop through the days in the current month
+
+        // Loop through each day of the month and retrieve booked slots
         for ($day = 1; $day <= $daysInMonth; $day++) {
-            $date = sprintf("%04d-%02d-%02d", $adjustedYear, $adjustedMonth, $day);
+            $date = sprintf("%04d-%02d-%02d", $currentYear, $currentMonth, $day);
+            
+            // Check if the date is within semester range
+            $dateObj = new DateTime($date);
+            $isWithinSemester = ($dateObj >= $semesterStartObj) && ($dateObj <= $semesterEndObj);
+            
             $bookedSlots = getBookedSlots($conn, $hall_id, $date);
             $monthCalendar['days'][] = [
                 'date' => $date,
-                'bookedSlots' => $bookedSlots
+                'bookedSlots' => $bookedSlots,
+                'isWithinSemester' => $isWithinSemester
             ];
         }
-    
+
+        // Add the month calendar to the overall calendar array
         $calendar[] = $monthCalendar;
+
+        // Move to the next month
+        $currentMonth++;
+        if ($currentMonth > 12) {
+            $currentMonth = 1;
+            $currentYear++;
+        }
     }
     
     $calendarJson = json_encode($calendar, JSON_PRETTY_PRINT);
@@ -367,6 +400,23 @@ body {
     color: #333; /* Text color for the legend items */
 }
 
+/* Semester banner styling */
+.semester-banner .alert {
+    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+    border: 2px solid #2196f3;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(33, 150, 243, 0.2);
+}
+
+.semester-banner .alert strong {
+    color: #1565c0;
+}
+
+.semester-banner .alert small {
+    color: #1976d2;
+    font-weight: 500;
+}
+
     </style>
 </head>
 <body>
@@ -379,6 +429,17 @@ body {
                <h3>Booking Details for <?php echo htmlspecialchars($col['hall_name']); ?></h3>
 
                </center>
+               
+               <!-- Semester Range Banner -->
+               <div class="semester-banner mb-3">
+                   <div class="alert alert-info text-center" role="alert">
+                       <i class="bi bi-calendar-event me-2"></i>
+                       <strong>Semester Period:</strong> 
+                       <?= date('M d, Y', strtotime($semesterStart)) ?> - <?= date('M d, Y', strtotime($semesterEnd)) ?>
+                       <br>
+                       <small class="text-muted">Only dates within this period can be booked</small>
+                   </div>
+               </div>
 
         
         <div id="calendar-container"></div>
@@ -485,14 +546,18 @@ body {
             if (foundDay) {
                 const dayDate = new Date(foundDay.date);
                 const dayName = dayDate.toLocaleString('en-US', { weekday: 'short' });
-                const isWeekend = dayDate.getDay() === 0 || dayDate.getDay() === 6; // Sunday or Saturday
-                const weekendClass = isWeekend ? 'weekend-cell' : '';
+                    const isWeekend = dayDate.getDay() === 0 || dayDate.getDay() === 6; // Sunday or Saturday
+                    const weekendClass = isWeekend ? 'weekend-cell' : '';
+                    
+                    // Check if the date is within semester range
+                    const isWithinSemester = foundDay.isWithinSemester;
+                    const semesterClass = !isWithinSemester ? 'past' : '';
 
-                return `
-                    <div class="calendar-cell ${weekendClass}">
-                        <div class="day-number ${weekendClass}">${day}</div> <!-- Apply weekendClass here -->
-                        <div class="day-name ${weekendClass}">${dayName}</div> <!-- Apply weekendClass here -->
-                    </div>`;
+                    return `
+                        <div class="calendar-cell ${weekendClass} ${semesterClass}">
+                            <div class="day-number ${weekendClass} ${semesterClass}">${day}</div> <!-- Apply weekendClass here -->
+                            <div class="day-name ${weekendClass} ${semesterClass}">${dayName}</div> <!-- Apply weekendClass here -->
+                        </div>`;
             } else {
                 // Add white-cell for missing days
                 return `<div class="calendar-cell white-cell"></div>`;
@@ -526,9 +591,15 @@ body {
                 const currentDateTime = new Date(); // Make sure this is the correct current time
                 let cellClass = '';
                 const dayOfWeek = dayDate.getDay(); // 0 for Sunday, 6 for Saturday
+                
+                // Check if the date is within semester range
+                const isWithinSemester = foundDay.isWithinSemester;
 
-                // Check if the day is Sunday (0 = Sunday in Date object)
-                if (slotDateTime <= currentDateTime) {
+                if (!isWithinSemester) {
+                    // Date is outside semester range - mark as past
+                    cellClass = 'past';
+                } else if (slotDateTime <= currentDateTime) {
+                    // Date is in the past (within semester)
                     cellClass = 'past';
                 } else {
                     const bookedSlots = foundDay.bookedSlots.filter(bs => bs.slot === slot);
@@ -654,6 +725,18 @@ const purposeInfo = `
             currentMonthIndex++;
             renderCalendar(calendarData, currentMonthIndex);
         }
+    }
+
+    // Function to check if a date is within semester range
+    function isDateWithinSemester(dateStr) {
+        const semesterStart = '<?= $semesterStart ?>';
+        const semesterEnd = '<?= $semesterEnd ?>';
+        
+        const date = new Date(dateStr);
+        const start = new Date(semesterStart);
+        const end = new Date(semesterEnd);
+        
+        return date >= start && date <= end;
     }
 
     // Initial render

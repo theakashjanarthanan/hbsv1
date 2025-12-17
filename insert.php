@@ -111,4 +111,4 @@ else if (isset($_POST['submitroom']) && $_SERVER["REQUEST_METHOD"] == "POST") {
         echo "Error: " . mysqli_error($conn);
     }
 }
-?><script>window.location.assign('view_modify_hall.php')</script>
+?><script>window.location.assign('view_modify_hall.php?success=1')</script>

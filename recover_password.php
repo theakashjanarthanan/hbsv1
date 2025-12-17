@@ -175,6 +175,11 @@
         <div class="navbar-title">
             <h4>UNIVERSITY HALL BOOKING SYSTEM</h4>
         </div>
+
+        <a href="contributors.php" class="btn btn-light btn-sm" style="display: inline-block; padding: 8px 10px; font-family: 'Arial', sans-serif; font-size: 16px; font-weight: bold; color: #333; background-color: #f8f9fa; border: 2px solid #ddd; border-radius: 8px; text-align: center; text-decoration: none; transition: all 0.3s ease-in-out; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
+            Developers Team
+        </a>
+        
     </div>
 </nav>
 
@@ -194,6 +199,7 @@
         </div>
     </main>
 </div>
+<?php include 'assets/footer.php'; ?>
 </body>
 </html>
 
@@ -229,11 +235,11 @@
             $mail->SMTPSecure='tls';
 
             // h-hotel account
-            $mail->Username='pudocs.hod@gmail.com';
-            $mail->Password='rxtljtgfcpihwhag';
+            $mail->Username='hbs.superuser@gmail.com';
+            $mail->Password='ubwncbdpsjvvxyus';
 
             // send by h-hotel email
-            $mail->setFrom('pudocs.hod@gmail.com', 'Password Reset');
+            $mail->setFrom('hbs.superuser@gmail.com', 'Password Reset');
             // get email from input
             $mail->addAddress($_POST["email_address"]);
             //$mail->addReplyTo('lamkaizhe16@gmail.com');

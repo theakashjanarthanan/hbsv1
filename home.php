@@ -525,12 +525,12 @@ $pending_count = $row['pending_count'];
                             <h3>Semester Time Period</h3>
                             <form action="add_semester.php" method="POST">
 
-                                <label for="start_date">Start Date:</label>
+                                <label for="start_date">Semester Start Date:</label>
                                 <input type="text" id="start_date" name="start_date"
                                 value="<?= $latestSemester['start_date'] ?? '' ?>" 
                                 onclick="openDateModal('start_date')" readonly required>
 
-                                <label for="end_date">End Date:</label>
+                                <label for="end_date">Semester End Date:</label>
                                 <input type="text" id="end_date" name="end_date"
                                 value="<?= $latestSemester['end_date'] ?? '' ?>" 
                                 onclick="openDateModal('end_date')" readonly required>
@@ -552,6 +552,10 @@ $pending_count = $row['pending_count'];
                                     </div>
                                 </div>
                             </div>
+                        </div>
+                        <!-- Note Banner -->
+                        <div class="alert alert-info mt-3" role="alert">
+                            <strong>Note:</strong> Setting the Semester Time Period will define the active academic calendar across the system. All bookings and scheduling functionalities will be restricted to this specified date range.
                         </div>
                     </div>
             </div>

@@ -161,15 +161,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         // Prepare and execute update query
         $sql = "UPDATE schools 
                 SET school_name = ?, incharge_name = ?, designation = ?, incharge_contact_number = ?, incharge_email = ?, incharge_intercom = ?, incharge_status = ? 
-                WHERE school_name = ?";
+                WHERE school_id = ?";
 
         $stmt = $conn->prepare($sql);
-        $stmt->bind_param('ssssssss', $schoolName, $deanName, $designation, $deanContact, $deanEmail, $deanIntercom, $deanStatus, $schoolName);
+        $stmt->bind_param('sssssssi', $schoolName, $deanName, $designation, $deanContact, $deanEmail, $deanIntercom, $deanStatus, $scl_id);
 
         if ($stmt->execute()) {
             // Success
-            echo "<script>alert('School details updated successfully!');</script>";
-            echo "<script>window.location.href='view_school.php';</script>";
+            echo "<script>alert('Modified Successfully!');</script>";
+            echo "<script>window.location.href='view_school.php?modified=1';</script>";
         } else {
             // Failure
             echo "<script>alert('Error updating school details!');</script>";

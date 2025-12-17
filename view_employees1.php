@@ -236,8 +236,6 @@ $sql .= " WHERE employee.school_id = '$school_id'";
         </div>
     </div>
 
-    <?php include 'assets/footer.php'; ?>
-
 </body>
 <script>
     function modifySelected() {

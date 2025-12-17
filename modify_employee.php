@@ -40,7 +40,10 @@ if (isset($_GET['employee_id'])) {
 <body>
     <?php include 'assets/header.php' ?>
     <div id="main">
-        <div class="main-content mt-2">
+        <div class="row justify-content-center">
+            <div class="col-md-10 mt-5">
+                <div class="card shadow-lg">
+                    <div class="card-body">
             <?php
             include('assets/conn.php');
 
@@ -48,10 +51,10 @@ if (isset($_GET['employee_id'])) {
             $query = "SELECT type_id, type_name FROM hall_type";
             $result = mysqli_query($conn, $query);
             ?>
-            <!-- Seminar Hall Form -->
+            <!-- Update Employee Form -->
             <form action="" id="myForm" method="post" style="margin:20px 150px; background-color:white; padding: 50px; border-radius:15px;" enctype="multipart/form-data">
 
-                <h1 style="color:#170098; text-align:center;">Update Employee</h1>
+                <h1 style="color:#170098; text-align:center;">Modify Employee</h1>
 
                 <!-- Hidden Employee ID Field -->
                 <input type="hidden" name="employee_id" value="<?php echo htmlspecialchars($employee_id); ?>">
@@ -138,10 +141,17 @@ if (isset($_GET['employee_id'])) {
 
                 <br>
 
-                <input type="submit" style="margin-left: 45%; background-color: #007bff; padding: 12px 40px;" class="btn btn-primary btn-lg" name="update_employee" value="Update Employee">
-                <input type="button" class="btn btn-success btn-lg" style="padding: 12px 40px;" onclick="clearForm()" name="clear" value="Reset">
+                <!-- Center Alligned Action Buttons -->
+                <div class="d-flex justify-content-center gap-3 mt-4">
+                 <input type="submit" style="background-color: #007bff" class="btn btn-primary btn-lg px-5 py-2" name="update_employee" value="Update Employee">
+                 <input type="button" class="btn btn-success btn-lg px-5 py-2" onclick="clearForm()" name="clear" value="Clear">
+                </div>
+
             </form>
 
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
     <!-- <footer>
@@ -292,7 +302,7 @@ if (isset($_POST['update_employee'])) {
 
     // Execute the update query
     if ($stmt->execute()) {
-        echo "<script>alert('Employee updated successfully!'); window.location='view_employees.php';</script>";
+        echo "<script>alert('Employee Modified Successfully!'); window.location='view_employees.php?modified=1';</script>";
     } else {
         echo "<script>alert('Error updating employee: " . $conn->error . "'); window.history.back();</script>";
     }

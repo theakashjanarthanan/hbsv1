@@ -139,10 +139,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $success_msg = "Your password has been successfully reset!";
                 ?><script>
                 window.location.replace("index.php");
-                alert("<?php echo "your password has been succesful reset"?>");
+                alert("<?php echo "Your password has been successfully reset. Please log in using your new password."?>");
             </script><?php
             } else {
-                $error_msg = "Invalid token or email. Please try again.";
+                $error_msg = "Your password has been successfully reset. Please log in using your new password.";
             }
         }
     } else {
