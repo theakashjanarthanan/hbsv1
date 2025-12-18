@@ -189,7 +189,7 @@
             <form action="#" method="POST" name="recover_psw">
                 <h3>Recover Password</h3>
                 <div class="mb-3">
-                    <label for="email_address" class="form-label">Email</label>
+                    <label for="email_address" class="form-label">Email <span style="color:red;">*</span></label>
                     <input type="email" class="form-control" id="email_address" name="email_address" placeholder="Enter the E-Mail ID" required autofocus>
                 </div>
                 <div class="text-center">

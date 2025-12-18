@@ -431,17 +431,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             <h3>Register</h3>
             <form action="register.php" method="POST" id="registerForm">
                 <div class="mb-3">
-                    <label for="username" class="form-label">Username</label>
+                    <label for="username" class="form-label">Username <span style="color:red;">*</span></label>
                     <input type="text" class="form-control" id="username" name="username" placeholder="Enter your username" required>
                 </div>
 
                 <div class="mb-3">
-                    <label for="email" class="form-label">Email</label>
+                    <label for="email" class="form-label">Email <span style="color:red;">*</span></label>
                     <input type="email" class="form-control" id="email" name="email" placeholder="Enter your email" required>
                 </div>
 
                 <div class="mb-3">
-                    <label for="role" class="form-label">Role</label>
+                    <label for="role" class="form-label">Role <span style="color:red;">*</span></label>
                     <select class="form-select" id="role" name="role" required>
                         <option value="" disabled selected>Select Role</option>
                         <option value="prof">Professor</option>
@@ -471,7 +471,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 </div>
 
                 <div class="mb-3 password-toggle">
-                    <label for="password" class="form-label">Password</label>
+                    <label for="password" class="form-label">Password <span style="color:red;">*</span></label>
                     <input type="password" class="form-control" id="password" name="password" placeholder="Enter your password" required>
                     <button type="button" class="toggle-visibility bi bi-eye-slash" style="margin-top:15px;" id="togglePassword" aria-label="Toggle password visibility"></button>
                 </div>

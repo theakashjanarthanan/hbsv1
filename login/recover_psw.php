@@ -90,6 +90,8 @@
             $_SESSION['email'] = $email;
 
             require "Mail/phpmailer/PHPMailerAutoload.php";
+            require_once __DIR__ . "/../assets/email_template.php";
+            
             $mail = new PHPMailer;
 
             $mail->isSMTP();
@@ -99,25 +101,20 @@
             $mail->SMTPSecure='tls';
 
             // h-hotel account
+            $mail->Username='hbs.superuser@gmail.com';
             $mail->Password='ubwncbdpsjvvxyus';
-            $mail->Password='admin123!!';
 
             // send by h-hotel email
-            $mail->setFrom('hbs.superuser@gmail.com', 'Password Reset');
+            $mail->setFrom('hbs.superuser@gmail.com', 'HBS - Pondicherry University');
             // get email from input
             $mail->addAddress($_POST["email"]);
             //$mail->addReplyTo('lamkaizhe16@gmail.com');
 
-            // HTML body
+            // HTML body - use professional template
+            $resetLink = "http://localhost/hbs_run/login/reset_psw.php?token=" . urlencode($token);
             $mail->isHTML(true);
-            $mail->Subject="Recover your password";
-            $mail->Body="<b>Dear User</b>
-            <h3>We received a request to reset your password.</h3>
-            <p>Kindly click the below link to reset your password</p>
-            http://localhost/hbs_run/login/reset_psw.php
-            <br><br>
-            <p>With regrads,</p>
-            <b>HBS-Team,Pondicherry University</b>";
+            $mail->Subject="Password Reset Request - HBS";
+            $mail->Body = getPasswordRecoveryEmail($resetLink);
 
             if(!$mail->send()){
                 ?>

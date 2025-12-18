@@ -1,6 +1,7 @@
 <?php
 include('smtp/PHPMailerAutoload.php');
 include('assets/conn.php'); // Include database connection file
+include('assets/email_template.php'); // Include professional email template
 
 // Check if form was submitted and required POST variables are set
 if (isset($_GET['booking_id'], $_GET['new_status'])) {
@@ -87,48 +88,40 @@ if (isset($_GET['booking_id'], $_GET['new_status'])) {
         $date_info = "from <b>$start_date</b> to <b>$end_date</b>";
     }
 
-    // Set the status color based on new status
-    $status_color = 'black';
-    if ($new_status == 'pending') {
-        $new_status = 'Forwarded; Pending to approve';
-        $status_color = 'green';
-    } elseif ($new_status == 'rejected') {
-        $new_status = 'Rejected; Not forwarded to approve';
-        $status_color = 'red';
+    // Fetch booking_id_gen for email
+    $booking_id_gen_query = "SELECT booking_id_gen FROM bookings WHERE booking_id = ?";
+    $booking_id_gen_stmt = $conn->prepare($booking_id_gen_query);
+    $booking_id_gen_stmt->bind_param("i", $booking_id);
+    $booking_id_gen_stmt->execute();
+    $booking_id_gen_stmt->bind_result($booking_id_gen);
+    $booking_id_gen_stmt->fetch();
+    $booking_id_gen_stmt->close();
+
+    // Date information for email (without HTML tags)
+    if ($start_date == $end_date) {
+        $date_info_email = $start_date;
+    } else {
+        $date_info_email = "from $start_date to $end_date";
     }
 
-    // Construct email body message
-    if ($session_type) {
-        $msg = "
-            <h2 style='color:$status_color;'>Booking Status ". ucfirst($new_status)."</h2>
-            <p>Dear $organiser_name,</p>
-            <p>Your booking for the hall <b>$hall_name</b> in <b>$department</b> has been updated. Below are the details:</p>
-            <p><b>Hall Name:</b> $hall_name</p>
-            <p><b>Department:</b> $department</p>
-            <p><b>Date:</b> $date_info</p>
-            <p><b>Session:</b> $session_type</p>
-            <p><b>Slot(s):</b> $slot_time</p>
-            <p><b>Status:</b> <span style='color:$status_color;'>" . ucfirst($new_status) . "</span></p>
-            <p>Thank you for booking with us!</p>
-            <br>
-            <b>Regards,<br>
-            HBS - Pondicherry University</b>
-        ";
+    // Set the status color based on new status
+    $status_color = 'black';
+    $email_status = $new_status;
+    
+    // Check if this is a forward booking (status changed from 'allow' to 'pending')
+    if ($new_status == 'pending' && $current_status == 'allow') {
+        // Use forward booking email template
+        $msg = getForwardBookingEmail($organiser_name, $hall_name, $department, $date_info_email, $session_type, $slot_time, $booking_id_gen);
     } else {
-        $msg = "
-            <h2 style='color:$status_color;'>Booking Status ". ucfirst($new_status)."</h2>
-            <p>Dear $organiser_name,</p>
-            <p>Your booking for the hall <b>$hall_name</b> in <b>$department</b> has been updated. Below are the details:</p>
-            <p><b>Hall Name:</b> $hall_name</p>
-            <p><b>Department:</b> $department</p>
-            <p><b>Date:</b> $date_info</p>
-            <p><b>Slot(s):</b> $slot_time</p>
-            <p><b>Status:</b> <span style='color:$status_color;'>" . ucfirst($new_status) . "</span></p>
-            <p>Thank you for booking with us!</p>
-            <br>
-            <b>Regards,<br>
-            HBS - Pondicherry University</b>
-        ";
+        // Use regular status update email
+        if ($new_status == 'pending') {
+            $email_status = 'Forwarded; Pending to approve';
+            $status_color = 'green';
+        } elseif ($new_status == 'rejected') {
+            $email_status = 'Rejected; Not forwarded to approve';
+            $status_color = 'red';
+        }
+        $msg = getBookingStatusEmail($organiser_name, $hall_name, $department, $date_info, $session_type, $slot_time, $email_status, $status_color, $purpose, $purpose_name);
     }
 
     // Send email to the organiser

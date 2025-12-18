@@ -1103,7 +1103,7 @@ FROM employee WHERE department_id = $department_id";
             document.getElementById(modalId).style.display = 'none';
         }
 
-        document.querySelectorAll("#bookedDateFilterForm, #dateRangeFilterForm, #hallDetailFilterForm, #organiserFilterForm, #statusFilterForm").forEach(form => {
+        document.querySelectorAll("#bookedDateFilterForm, #dateRangeFilterForm, #hallFilterForm, #purposeFilterForm, #organiserFilterForm, #statusFilterForm").forEach(form => {
             form.onsubmit = function (event) {
                 event.preventDefault();
                 const formData = new FormData(this);

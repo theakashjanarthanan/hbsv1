@@ -1,6 +1,7 @@
 <?php
 include('smtp/PHPMailerAutoload.php');
 include('assets/conn.php'); // Include database connection file
+include('assets/email_template.php'); // Include professional email template
 
 // Check if form was submitted and required POST variables are set
 if (isset($_GET['booking_id'], $_GET['new_status'])) {
@@ -95,39 +96,8 @@ if (isset($_GET['booking_id'], $_GET['new_status'])) {
         $status_color = 'red';
     }
 
-    // Construct email body message
-    if ($session_type) {
-        $msg = "
-            <h2 style='color:$status_color;'>Booking Status ". ucfirst($new_status)."</h2>
-            <p>Dear $organiser_name,</p>
-            <p>Your booking for the hall <b>$hall_name</b> in <b>$department</b> has been updated. Below are the details:</p>
-            <p><b>Hall Name:</b> $hall_name</p>
-            <p><b>Department:</b> $department</p>
-            <p><b>Date:</b> $date_info</p>
-            <p><b>Session:</b> $session_type</p>
-            <p><b>Slot(s):</b> $slot_time</p>
-            <p><b>Status:</b> <span style='color:$status_color;'>" . ucfirst($new_status) . "</span></p>
-            <p>Thank you for booking with us!</p>
-            <br>
-            <b>Regards,<br>
-            HBS - Pondicherry University</b>
-        ";
-    } else {
-        $msg = "
-            <h2 style='color:$status_color;'>Booking Status ". ucfirst($new_status)."</h2>
-            <p>Dear $organiser_name,</p>
-            <p>Your booking for the hall <b>$hall_name</b> in <b>$department</b> has been updated. Below are the details:</p>
-            <p><b>Hall Name:</b> $hall_name</p>
-            <p><b>Department:</b> $department</p>
-            <p><b>Date:</b> $date_info</p>
-            <p><b>Slot(s):</b> $slot_time</p>
-            <p><b>Status:</b> <span style='color:$status_color;'>" . ucfirst($new_status) . "</span></p>
-            <p>Thank you for booking with us!</p>
-            <br>
-            <b>Regards,<br>
-            HBS - Pondicherry University</b>
-        ";
-    }
+    // Use professional email template
+    $msg = getBookingStatusEmail($organiser_name, $hall_name, $department, $date_info, $session_type, $slot_time, $new_status, $status_color, $purpose, $purpose_name);
 
     // Send email to the organiser
     // echo smtp_mailer("pudocs.hod@gmail.com", 'Booking Status Update', $msg);

@@ -416,18 +416,34 @@ $rooms_result = mysqli_query($conn, $rooms_query);
 
                         // Add event listeners to slot checkboxes
                         slotCheckboxes.forEach(checkbox => {
-                            checkbox.addEventListener('change', updateSessionCheckboxes);
+                            checkbox.addEventListener('change', function() {
+                                updateSessionCheckboxes();
+                                // Trigger filter when slots change
+                                if (typeof filterRooms === 'function') {
+                                    filterRooms();
+                                }
+                            });
                         });
 
                         // Add event listeners to session checkboxes
                         sessionCheckboxes.forEach(checkbox => {
-                            checkbox.addEventListener('change', updateSlotsBasedOnSession);
+                            checkbox.addEventListener('change', function() {
+                                updateSlotsBasedOnSession();
+                                // Trigger filter when sessions change
+                                if (typeof filterRooms === 'function') {
+                                    filterRooms();
+                                }
+                            });
                         });
 
                         // Add event listener to clear button
                         clearButton.addEventListener('click', () => {
                             slotCheckboxes.forEach(checkbox => checkbox.checked = false);
                             sessionCheckboxes.forEach(checkbox => checkbox.checked = false);
+                            // Trigger filter after clearing
+                            if (typeof filterRooms === 'function') {
+                                filterRooms();
+                            }
                         });
 
                         // Initialize state on page load
@@ -507,6 +523,8 @@ $rooms_result = mysqli_query($conn, $rooms_query);
                             if ($('#to-date').val() < fromDate) {
                                 $('#to-date').val(fromDate);
                             }
+                            // Trigger filter when date changes
+                            filterRooms();
                         });
 
                         // Ensure "From" date cannot be after "To" date
@@ -516,6 +534,8 @@ $rooms_result = mysqli_query($conn, $rooms_query);
                             if (fromDate && fromDate > toDate) {
                                 $('#from-date').val(toDate);
                             }
+                            // Trigger filter when date changes
+                            filterRooms();
                         });
 
                         // Load departments based on selected school and hall type
@@ -596,7 +616,7 @@ $rooms_result = mysqli_query($conn, $rooms_query);
                         });
 
                     });
-                    // Slot selection logic
+                    // Slot selection logic - range selection
                     document.addEventListener('DOMContentLoaded', () => {
                         const checkboxes = document.querySelectorAll('.slot-checkbox');
 
@@ -613,6 +633,11 @@ $rooms_result = mysqli_query($conn, $rooms_query);
                                     for (let i = minIndex; i <= maxIndex; i++) {
                                         checkboxes[i].checked = true;
                                     }
+                                }
+                                
+                                // Trigger filter when slots change (range selection)
+                                if (typeof filterRooms === 'function') {
+                                    filterRooms();
                                 }
                             });
                         });

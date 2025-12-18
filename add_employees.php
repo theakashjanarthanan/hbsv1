@@ -117,7 +117,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["submitroom"])) {
 
                 <div class="form-group">
                     <!-- Dropdown for Belongs To -->
-                    <label class="form-label mt-2" for="belongs_to">Belongs to:</label>
+                    <label class="form-label mt-2" for="belongs_to">Belongs to: <span style="color:red;">*</span></label>
                     <select name="belongs_to" style="padding: 11px; color:#595c7e;" id="belongs_to" class="form-control" onchange="toggleBelongsTo(this.value)" required>
                         <option value="">--- Select ---</option>
                         <option value="Department">Department</option>

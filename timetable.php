@@ -366,6 +366,7 @@ $events_json = json_encode($uniqueEvents, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HE
             }
 
             var calendar = new FullCalendar.Calendar(calendarEl, {
+                locale: 'en-GB',
                 initialView: 'timeGridWeek',
                 headerToolbar: {
                     left: 'prev,next today',

@@ -333,6 +333,7 @@
                 <div class="form-group">
                     <label class="form-label">Image:</label>
                     <input type="file" class="form-control" id="imageUpload" name="file"><br>
+                    <small class="form-text text-muted">NOTE: Image Uploading Feature Will be added in future updates.</small>
                 </div>
                 <!-- <label class="form-label">Room Availability:</label>
                 <div class="mt-2 mb-1"> -->

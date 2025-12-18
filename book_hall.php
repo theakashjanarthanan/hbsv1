@@ -199,13 +199,6 @@ $currentDateTime = date('Y-m-d H:i:s');
 
         }
 
-        .calendar-time-column {
-            width: 100px;
-            text-align: center;
-            padding: 2px;
-            font-size: 0.9rem;
-        }
-
         .calendar-cell {
             width: 20px;
             height: 20px;
@@ -225,6 +218,14 @@ $currentDateTime = date('Y-m-d H:i:s');
         #calendar-container {
             justify-content: space-around !important;
             overflow-x: scroll;
+        }
+
+        .calendar-time-column {
+            width: 80px;
+            /* Set fixed width for the time column */
+            text-align: left;
+            padding: 2px;
+            font-size: 0.8rem;
         }
 
         /* Available cells (green) */
@@ -256,7 +257,7 @@ $currentDateTime = date('Y-m-d H:i:s');
         }
 
         .calendar-cell.pending:hover {
-            background-color: rgb(244, 255, 91);
+            background-color: rgb(242, 255, 0);
             /* Hover color for pending */
             border: 1px solid black;
             transform: scale(1.05);
@@ -381,45 +382,18 @@ $currentDateTime = date('Y-m-d H:i:s');
         /* Make the time column's width fixed */
         .time-slot-row {
             display: flex;
-            justify-content: center;
+            justify-content: flex-start;
             align-items: center;
-            margin-bottom: 1;
         }
 
         .time-slot-row:first-of-type {
-            margin-bottom: 1;
+            margin-bottom: 20px;
         }
 
         /* For calendar cells, use flex to ensure layout alignment */
         .time-slot-container {
             display: flex;
             flex-direction: column;
-        }
-
-        .time-slot-row {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            /* Ensure the row expands to fit all day columns */
-            min-width: max-content;
-            /* transition: all 0.3s ease; */
-        }
-
-        .time-slot-row:hover {
-            /* background: rgba(0, 123, 255, 0.05); */
-            /* border-radius: 6px;
-            padding: 2px 4px; */
-        }
-
-        .calendar-time-column {
-            width: 100px;
-            text-align: center;
-            padding: 2px;
-            font-size: 0.9rem;
-        }
-
-        .calendar-time-column:hover {
-            background: rgba(255, 255, 255, 0.7);
         }
 
         .calendar-cell {
@@ -725,7 +699,7 @@ $currentDateTime = date('Y-m-d H:i:s');
         }
 
         .slot-checkbox:checked + label::after {
-            content: " ✓";
+           /* content: " ✓"; */
             font-weight: bold;
         }
 
@@ -767,7 +741,7 @@ $currentDateTime = date('Y-m-d H:i:s');
         }
 
         .slot-checkbox:checked + .slot-label::after {
-            content: " ✓";
+           /* content: " ✓"; */
             font-weight: bold;
             margin-left: 5px;
         }
@@ -822,31 +796,6 @@ $currentDateTime = date('Y-m-d H:i:s');
             flex-direction: column;
         }
 
-        .time-slot-row {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-bottom: 0;
-            /* transition: all 0.3s ease; */
-        }
-
-        .time-slot-row:hover {
-            /* background: rgba(0, 123, 255, 0.05); */
-            /* border-radius: 6px;
-            padding: 2px 4px; */
-        }
-
-        .calendar-time-column {
-            width: 100px;
-            text-align: center;
-            padding: 2px;
-            font-size: 0.9rem;
-        }
-
-        .calendar-time-column:hover {
-            background: rgba(255, 255, 255, 0.7);
-        }
-
         .calendar-cell {
             width: 24px;
             height: 24px;
@@ -862,7 +811,7 @@ $currentDateTime = date('Y-m-d H:i:s');
         }
 
         .calendar-cell::before {
-            content: '';
+           /* content: " ✓"; */
             position: absolute;
             top: 50%;
             left: 50%;
@@ -906,10 +855,15 @@ $currentDateTime = date('Y-m-d H:i:s');
         }
 
         .calendar-cell.pending:hover {
-            background: linear-gradient(135deg, #fd7e14, #e83e8c);
-            transform: scale(1.1);
-            box-shadow: 0 4px 12px rgba(255, 193, 7, 0.4);
+            background-color: rgb(242, 255, 0);
+            /* Hover color for pending */
             border: 1px solid black;
+            transform: scale(1.05);
+            /* Slight scale effect */
+            box-shadow: 0 2px 5px rgba(243, 255, 6, 0.6);
+            /* Subtle shadow effect */
+            color: black;
+            /* Change text color on hover */
         }
 
         .calendar-cell.approved {
@@ -976,27 +930,11 @@ $currentDateTime = date('Y-m-d H:i:s');
         }
 
         .calendar-cell.activeAttachment {
-            background: linear-gradient(135deg, #007bff, #0056b3) !important;
-            border: 2px solid #fff !important;
-            box-shadow: 0 0 15px rgba(0, 123, 255, 0.6) !important;
-            transform: scale(1.15) !important;
-            animation: slotSelected 0.3s ease-in-out;
+            background-color: rgb(0, 123, 255) !important;
+            box-shadow: 0 0 5px rgba(4, 170, 253, 0.5);
+            transform: scale(1.05);
+            /* Slight scale effect */
         }
-
-        .calendar-cell.activeAttachment::after {
-            content: '✓';
-            position: absolute;
-            top: -2px;
-            right: -2px;
-            background: #28a745;
-            color: white;
-            border-radius: 50%;
-            width: 16px;
-            height: 16px;
-            font-size: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             font-weight: bold;
         }
 
@@ -1368,7 +1306,7 @@ $currentDateTime = date('Y-m-d H:i:s');
                                             <div class="mb-2">
                                                 <div class="row">
                                                     <div class="col-md-6 mb-3">
-                                                        <label for="start_date" class="form-label">From:</label>
+                                                        <label for="start_date" class="form-label">From: <span style="color:red;">*</span></label>
                                                         <input
                                                             type="date"
                                                             id="start_date"
@@ -1385,7 +1323,7 @@ $currentDateTime = date('Y-m-d H:i:s');
                                                         <div id="start_date_error" class="error-message"></div>
                                                     </div>
                                                     <div class="col-md-6 mb-3">
-                                                        <label for="end_date" class="form-label">To:</label>
+                                                        <label for="end_date" class="form-label">To: <span style="color:red;">*</span></label>
                                                         <input
                                                             type="date"
                                                             id="end_date"
@@ -1406,7 +1344,7 @@ $currentDateTime = date('Y-m-d H:i:s');
 
                                         <!-- Slot Options -->
                                         <div class="form-group mb-3" id="slot_options">
-                                            <label class="form-label">Choose Slot(s):</label>
+                                            <label class="form-label">Choose Slot(s): <span style="color:red;">*</span></label>
                                             <div class="btn-group w-100" role="group">
                                                 <input class="btn-check session-checkbox" type="checkbox" id="fn"
                                                     value="fn" autocomplete="off" onchange="updateSlotsBasedOnSession()">
@@ -1480,7 +1418,7 @@ $currentDateTime = date('Y-m-d H:i:s');
                                              <span id="booking2" style="display:none;" class="booking-form-container">
 
                                             <div class="mb-3">
-                                                <label class="form-label">Purpose of Booking</label>
+                                                <label class="form-label">Purpose of Booking <span style="color:red;">*</span></label>
                                                 <div class="btn-group w-100" role="group"
                                                     aria-label="Purpose of Booking">
                                                     <input type="radio" class="btn-check" id="purpose_event"
@@ -1513,20 +1451,20 @@ $currentDateTime = date('Y-m-d H:i:s');
                                                         </select>
                                                     </div>
                                                     <div class="col-md-6 mb-3">
-                                                        <label for="event_invitation" class="form-label">Upload
-                                                            Invitation</label>
+                                                        <label for="event_invitation" class="form-label">Upload Invitation</label> <br>
                                                         <input class="form-control" type="file" id="event_invitation"
                                                             name="event_invitation" accept=".jpeg, .jpg, .png, .pdf"
                                                             onchange="validateFileSize()" />
                                                         <small id="file-size-message">Supported formats: JPEG, JPG, PNG,
-                                                            PDF. Max size: 1MB.</small>
+                                                            PDF. Max size: 1MB.</small> <br> <br>
+                                                            <small class="form-text text-muted">NOTE: Image Uploading Feature Will be added in future updates.</small>
                                                     </div>
                                                 </div>
                                             </div>
 
                                             <div class="mb-3">
                                                 <label for="purpose_name" class="form-label"
-                                                    id="label-purpose-name">Name of the Event</label>
+                                                    id="label-purpose-name">Name of the Event <span style="color:red;">*</span></label>
 
                                                 <textarea class="form-control" id="purpose_name" name="purpose_name"
                                                     rows="3" required></textarea>
@@ -1536,7 +1474,7 @@ $currentDateTime = date('Y-m-d H:i:s');
                                             <div class="mb-3">
                                                 <label for="students_count" class="form-label"
                                                     id="label-students-count">
-                                                    Number of Participants Expected 
+                                                    Number of Participants Expected <span style="color:red;">*</span>
                                                 </label>
                                                 (Maximum - <?php echo $hall['capacity']; ?>)
                                                 <input type="number" class="form-control" id="students_count" min="5"
@@ -2295,7 +2233,33 @@ $currentDateTime = date('Y-m-d H:i:s');
             // ,{slot: 9, time: '05:30 PM'}, {slot: 10, time: '06:30 PM'}, {slot: 11, time: '07:30 PM'}, {slot: 12, time: '08:30 PM'}, {slot: 13, time: '09:30 PM'}
         ];
 
+        // Find the current month's index in calendarData
+        const currentDate = new Date();
+        const currentYear = currentDate.getFullYear();
+        const currentMonth = currentDate.getMonth() + 1; // JavaScript months are 0-indexed
+        
+        // Find the index of the current month in calendarData
         let currentMonthIndex = 0;
+        for (let i = 0; i < calendarData.length; i++) {
+            if (calendarData[i].year === currentYear && calendarData[i].month === currentMonth) {
+                currentMonthIndex = i;
+                break;
+            }
+        }
+        
+        // If current month is not found (outside semester range), default to first month
+        if (currentMonthIndex === 0 && (calendarData[0].year !== currentYear || calendarData[0].month !== currentMonth)) {
+            // Check if current date is before semester start - show first month
+            // Check if current date is after semester end - show last month
+            const semesterStart = new Date('<?php echo $semesterStart; ?>');
+            const semesterEnd = new Date('<?php echo $semesterEnd; ?>');
+            
+            if (currentDate < semesterStart) {
+                currentMonthIndex = 0; // Show first month of semester
+            } else if (currentDate > semesterEnd) {
+                currentMonthIndex = calendarData.length - 1; // Show last month of semester
+            }
+        }
 
         function renderCalendar(calendarData, startIndex = 0) {
             const container = document.getElementById('calendar-container');
@@ -3025,8 +2989,8 @@ $currentDateTime = date('Y-m-d H:i:s');
             return { semesterStart, semesterEnd };
         }
 
-        // Initial render
-        renderCalendar(calendarData);
+        // Initial render - start with current month
+        renderCalendar(calendarData, currentMonthIndex);
 
         // Removed autoSelectSlots to allow free selection/deselection of any slots
 

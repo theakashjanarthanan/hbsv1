@@ -240,7 +240,7 @@ if ($booking && isset($booking['department_id'])) {
                             </div>
 
                             <div class="form-group mb-3">
-                                <label for="purpose" class="form-label">Purpose</label>
+                                <label for="purpose" class="form-label">Purpose <span style="color:red;">*</span></label>
                                 <select class="form-control" id="purpose" name="purpose" required>
                                     <option value="">Select Purpose</option>
                                     <option value="class" <?php echo ($booking['purpose'] == 'class') ? 'selected' : ''; ?>>Class</option>
@@ -253,7 +253,7 @@ if ($booking && isset($booking['department_id'])) {
                             </div>
 
                             <div class="form-group mb-3">
-                                <label for="purpose_name" class="form-label">Purpose Name</label>
+                                <label for="purpose_name" class="form-label">Purpose Name <span style="color:red;">*</span></label>
                                 <input type="text" class="form-control" id="purpose_name" name="purpose_name" 
                                        value="<?php echo htmlspecialchars($booking['purpose_name'] ?? ''); ?>" required>
                             </div>

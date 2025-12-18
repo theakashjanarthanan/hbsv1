@@ -159,7 +159,7 @@ if (isset($_GET['id'])) {
                             <div class="mb-4">
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
-                                        <label for="start_date" class="form-label">Start Date:</label>
+                                        <label for="start_date" class="form-label">Start Date: <span style="color:red;">*</span></label>
                                         <input type="date" name="start_date" id="start_date" class="form-control"
                                             value="<?php echo htmlspecialchars($booking['start_date']); ?>" 
                                             min="<?= htmlspecialchars($semesterStart) ?>"
@@ -169,7 +169,7 @@ if (isset($_GET['id'])) {
                                         <div id="start_date_error" class="error-message"></div>
                                     </div>
                                     <div class="col-md-6 mb-3">
-                                        <label for="end_date" class="form-label">End Date:</label>
+                                        <label for="end_date" class="form-label">End Date: <span style="color:red;">*</span></label>
                                         <input type="date" name="end_date" id="end_date" class="form-control"
                                             value="<?php echo htmlspecialchars($booking['end_date']); ?>" 
                                             min="<?= htmlspecialchars($semesterEnd) ?>"
@@ -316,7 +316,7 @@ if (isset($_GET['id'])) {
 
 
                                 <div class="mb-3">
-                                    <label for="purpose_name" class="form-label">Name of the Programme/Event</label>
+                                    <label for="purpose_name" class="form-label">Name of the Programme/Event <span style="color:red;">*</span></label>
                                     <textarea class="form-control" id="purpose_name" name="purpose_name" rows="3"
                                         required><?php echo htmlspecialchars($booking['purpose_name']); ?></textarea>
                                 </div>

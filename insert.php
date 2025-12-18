@@ -54,12 +54,37 @@ else if (isset($_POST['submitroom']) && $_SERVER["REQUEST_METHOD"] == "POST") {
     $zone = $_POST['zone'];
     $cost = $_POST['cost'];
 
-    // Image upload handling
-    $image = '';
+    /**
+     * ============================================================================
+     * IMAGE UPLOAD HANDLING - Hall Image Upload
+     * ============================================================================
+     * This section handles the upload of hall images when adding a new hall.
+     * 
+     * Process:
+     * 1. Check if file was uploaded and has no errors
+     * 2. Extract the original filename
+     * 3. Create destination path in 'image/' directory
+     * 4. Move uploaded file from temporary location to permanent storage
+     * 5. Store relative path in $image variable for database insertion
+     * 
+     * Note: Currently basic implementation - no file type validation or size checks
+     * ============================================================================
+     */
+    $image = ''; // Initialize image path variable
+    
+    // Check if file was uploaded and has no upload errors
+    // $_FILES['file']['error'] == 0 means no errors occurred
     if (isset($_FILES['file']) && $_FILES['file']['error'] == 0) {
+        // Extract filename and create destination path
+        // basename() prevents directory traversal attacks
         $image = 'image/' . basename($_FILES['file']['name']);
+        
+        // Move the uploaded file from temporary location to permanent storage
+        // $_FILES['file']['tmp_name'] is the temporary file path created by PHP
+        // $image is the destination path where file will be stored
         move_uploaded_file($_FILES['file']['tmp_name'], $image);
     }
+    // If no file uploaded or error occurred, $image remains empty string
 
     if ($_POST['availability'] == "Yes") {
         $availability = "Yes";

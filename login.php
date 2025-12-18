@@ -401,12 +401,12 @@ $conn->close();
             <h3>Login</h3>
             <form action="login.php" method="POST" id="loginForm">
                 <div class="mb-3">
-                    <label for="email" class="form-label">Email</label>
+                    <label for="email" class="form-label">Email <span style="color:red;">*</span></label>
                     <input type="email" class="form-control<?php echo !empty($error_msg) ? ' is-invalid' : ''; ?>" id="email" name="email" placeholder="Enter the E-Mail ID" required>
                 </div>
 
                 <div class="mb-3 password-toggle">
-                    <label for="password" class="form-label">Password</label>
+                    <label for="password" class="form-label">Password <span style="color:red;">*</span></label>
                 <input type="password" class="form-control<?php echo !empty($error_msg) ? ' is-invalid' : ''; ?>" id="password" name="password" placeholder="Enter the Password" required>
                 <button type="button" class="toggle-visibility bi bi-eye-slash" style="margin-top:15px;" id="togglePassword" aria-label="Toggle password visibility"></button>
                 </div>

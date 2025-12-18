@@ -136,6 +136,47 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
             if ($query > 0) {
                 mysqli_query($conn, "UPDATE users SET password='$hash' WHERE email='$email'");
+                
+                // Send password changed email
+                require_once('smtp/PHPMailerAutoload.php');
+                require_once('assets/email_template.php');
+                
+                // Fetch username
+                $user_query = mysqli_query($conn, "SELECT username FROM users WHERE email='$email'");
+                $user_data = mysqli_fetch_assoc($user_query);
+                $username = $user_data['username'] ?? 'User';
+                
+                // SMTP mailer function
+                function smtp_mailer($to, $subject, $msg) {
+                    $mail = new PHPMailer();
+                    $mail->IsSMTP();
+                    $mail->SMTPAuth = true;
+                    $mail->SMTPSecure = 'tls';
+                    $mail->Host = "smtp.gmail.com";
+                    $mail->Port = 587;
+                    $mail->IsHTML(true);
+                    $mail->CharSet = 'UTF-8';
+                    $mail->Username = "hbs.superuser@gmail.com";
+                    $mail->Password = 'ubwncbdpsjvvxyus';
+                    $mail->SetFrom("hbs.superuser@gmail.com", "HBS - Pondicherry University");
+                    $mail->Subject = $subject;
+                    $mail->Body = $msg;
+                    $mail->AddAddress($to);
+                    $mail->SMTPOptions = array('ssl' => array(
+                        'verify_peer' => false,
+                        'verify_peer_name' => false,
+                        'allow_self_signed' => false
+                    ));
+                    
+                    if (!$mail->Send()) {
+                        return false;
+                    }
+                    return true;
+                }
+                
+                $msg = getPasswordChangedEmail($username);
+                smtp_mailer($email, 'Password Changed Successfully', $msg);
+                
                 $success_msg = "Your password has been successfully reset!";
                 ?><script>
                 window.location.replace("index.php");

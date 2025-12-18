@@ -211,10 +211,11 @@ echo "<!-- End Debug -->\n";
         }
 
         .calendar-time-column {
-            width: 100px;
-            text-align: center;
+            width: 80px;
+            /* Set fixed width for the time column */
+            text-align: left;
             padding: 2px;
-            font-size: 0.9rem;
+            font-size: 0.8rem;
         }
 
         .calendar-cell {
@@ -350,6 +351,13 @@ echo "<!-- End Debug -->\n";
             cursor: not-allowed;
         }
 
+        .activeAttachment {
+            background-color: rgb(0, 123, 255) !important;
+            box-shadow: 0 0 5px rgba(4, 170, 253, 0.5);
+            transform: scale(1.05);
+            /* Slight scale effect */
+        }
+
         .calendar-cell.weekend-cell {
             /* background-color:rgb(212, 212, 212);  */
             color: #333;
@@ -368,9 +376,10 @@ echo "<!-- End Debug -->\n";
             /* Apply same color to both day and name */
         }
 
+        /* Make the time column's width fixed */
         .time-slot-row {
             display: flex;
-            justify-content: center;
+            justify-content: flex-start;
             align-items: center;
         }
 
@@ -378,9 +387,11 @@ echo "<!-- End Debug -->\n";
             margin-bottom: 20px;
         }
 
+        /* For calendar cells, use flex to ensure layout alignment */
         .time-slot-container {
             display: flex;
             flex-direction: column;
+            margin-left:300px;
         }
 
         .month-header {
@@ -592,7 +603,33 @@ echo "<!-- End Debug -->\n";
         // ,{slot: 9, time: '05:30 PM'}, {slot: 10, time: '06:30 PM'}, {slot: 11, time: '07:30 PM'}, {slot: 12, time: '08:30 PM'}, {slot: 13, time: '09:30 PM'}
     ];
 
+    // Find the current month's index in calendarData
+    const currentDate = new Date();
+    const currentYear = currentDate.getFullYear();
+    const currentMonth = currentDate.getMonth() + 1; // JavaScript months are 0-indexed
+    
+    // Find the index of the current month in calendarData
     let currentMonthIndex = 0;
+    for (let i = 0; i < calendarData.length; i++) {
+        if (calendarData[i].year === currentYear && calendarData[i].month === currentMonth) {
+            currentMonthIndex = i;
+            break;
+        }
+    }
+    
+    // If current month is not found (outside semester range), default to first month
+    if (currentMonthIndex === 0 && (calendarData[0].year !== currentYear || calendarData[0].month !== currentMonth)) {
+        // Check if current date is before semester start - show first month
+        // Check if current date is after semester end - show last month
+        const semesterStart = new Date('<?php echo $semesterStart; ?>');
+        const semesterEnd = new Date('<?php echo $semesterEnd; ?>');
+        
+        if (currentDate < semesterStart) {
+            currentMonthIndex = 0; // Show first month of semester
+        } else if (currentDate > semesterEnd) {
+            currentMonthIndex = calendarData.length - 1; // Show last month of semester
+        }
+    }
 
     function renderCalendar(calendarData, startIndex = 0) {
     const container = document.getElementById('calendar-container');
@@ -914,8 +951,8 @@ const purposeInfo = `
         return { semesterStart, semesterEnd };
     }
     
-    // Initial render
-    renderCalendar(calendarData);
+    // Initial render - start with current month
+    renderCalendar(calendarData, currentMonthIndex);
     </script>
 </body>
 </html>

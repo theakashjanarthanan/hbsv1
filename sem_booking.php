@@ -701,7 +701,7 @@ $semesterStartDate = isset($latestSemester['start_date']) && $latestSemester['st
 ?>
 
 <div class="w-50">
-    <label for="start_date" class="form-label">Select Date:</label>
+    <label for="start_date" class="form-label">Select Date: <span style="color:red;">*</span></label>
     <!-- <small class="text-muted">Adjusted to the Current Date</small> -->
     <input type="date" id="start_date" name="start_date" class="form-control" 
            value="<?= $semesterStartDate ?>" 
@@ -713,7 +713,7 @@ $semesterStartDate = isset($latestSemester['start_date']) && $latestSemester['st
 </div>
 
         <div class="w-50">
-            <label for="end_date" class="form-label">Semester End Date:</label>
+            <label for="end_date" class="form-label">Semester End Date: <span style="color:red;">*</span></label>
             <input type="date" id="end_date" name="end_date" class="form-control" 
                    value="<?= $latestSemester['end_date'] ?? '' ?>" 
                    min="<?= max($semesterStart, $today) ?>" 
@@ -726,7 +726,7 @@ $semesterStartDate = isset($latestSemester['start_date']) && $latestSemester['st
 
     <!-- Day of the Week as Radio Buttons in one line -->
     <div class="mb-3">
-        <label class="form-label">Select Day:</label>
+        <label class="form-label">Select Day: <span style="color:red;">*</span></label>
         <div class="d-flex gap-3">
             <?php
             $days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];

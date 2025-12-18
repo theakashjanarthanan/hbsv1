@@ -126,13 +126,13 @@ if (isset($_POST['submitroom']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div id="school-form" class=" form-section active mt-3">
                     <!-- <h3>School Details</h3> -->
                     <div class="form-label">
-                        <label class="form-label" for="school">School Name:</label>
+                        <label class="form-label" for="school">School Name: <span style="color:red;">*</span></label>
                         <input type="text" class="form-control" id="school" name="school" placeholder="Enter School Name" data-required="true">
                         <span id="school-error" style="color: red;"></span>
                     </div>
                     
                     <div class="form-label">
-                        <label class="form-label" for="dean-name">Dean Name:</label>
+                        <label class="form-label" for="dean-name">Dean Name: <span style="color:red;">*</span></label>
                         <input type="text" class="form-control" id="dean-name" name="incharge-name" placeholder="Enter Dean Name" data-required="true">
                         <span id="dean-name-error" style="color: red;"></span>
                     </div>
@@ -144,19 +144,19 @@ if (isset($_POST['submitroom']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div> -->
 
                     <div class="form-label">
-                        <label class="form-label" for="dean-contact">Dean Contact Number:</label>
+                        <label class="form-label" for="dean-contact">Dean Contact Number: <span style="color:red;">*</span></label>
                         <input type="text" class="form-control" id="dean-contact" name="incharge-contact" placeholder="Enter Dean Contact Number" data-required="true">
                         <span id="dean-contact-error" style="color: red;"></span>
                     </div>
 
                     <div class="form-label">
-                        <label class="form-label" for="dean-email">Dean Email:</label>
+                        <label class="form-label" for="dean-email">Dean Email: <span style="color:red;">*</span></label>
                         <input type="email" class="form-control" id="dean-email" name="incharge-email" placeholder="Enter Dean Email" data-required="true">
                         <span id="dean-email-error" style="color: red;"></span>
                     </div>
 
                     <div class="form-label">
-                        <label class="form-label" for="dean-intercom">Dean Intercom:</label>
+                        <label class="form-label" for="dean-intercom">Dean Intercom: <span style="color:red;">*</span></label>
                         <input type="text" class="form-control" id="dean-intercom" name="incharge-intercom" placeholder="Enter Dean Intercom" data-required="true">
                         <span id="dean-intercom-error" style="color: red;"></span>
                     </div>

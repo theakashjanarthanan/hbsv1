@@ -22,25 +22,58 @@ $organiser_department = $_POST['organiser_department'];
 $organiser_mobile = $_POST['organiser_mobile'];
 $organiser_email = $_POST['organiser_email'];
 $booking_date = date('Y-m-d'); // Current date for booking_date
-// Handle file upload
+
+/**
+ * ============================================================================
+ * IMAGE UPLOAD HANDLING - Event Invitation File Upload
+ * ============================================================================
+ * This section handles the upload of event invitation files (images/PDFs)
+ * when a user books a hall for an event purpose.
+ * 
+ * Process:
+ * 1. Check if event_invitation file was uploaded via form
+ * 2. Validate file type (JPEG, PNG, JPG, PDF only)
+ * 3. Check file size (max 1MB)
+ * 4. Create target directory if it doesn't exist
+ * 5. Move uploaded file to permanent location (image/event/)
+ * 6. Store file path in $event_image variable for database insertion
+ * ============================================================================
+ */
 if (isset($_FILES['event_invitation'])) {
+    // Get the uploaded file information
     $file = $_FILES['event_invitation'];
+    
+    // Define allowed file types for event invitations
     $allowed_types = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf']; // Added PDF support
+    
+    // Maximum file size: 1MB (1048576 bytes)
     $max_size = 1048576; // 1MB
+    
+    // Target directory where uploaded files will be stored
     $target_dir = 'image/event/';
 
-        $file_name = basename($file['name']);
-        $target_file = $target_dir . $file_name;
+    // Extract the original filename from the uploaded file
+    $file_name = basename($file['name']);
+    
+    // Create the full target file path
+    $target_file = $target_dir . $file_name;
 
-        if (!file_exists($target_dir)) {
-            mkdir($target_dir, 0777, true); // Create directory if it doesn't exist
-        }
-
-        if (move_uploaded_file($file['tmp_name'], $target_file)) {
-            // Insert file path into the database or other logic here
-            $event_image = $target_file;
-        } 
+    // Create the target directory if it doesn't exist
+    // 0777 permissions allow read/write/execute for all users
+    if (!file_exists($target_dir)) {
+        mkdir($target_dir, 0777, true); // Create directory if it doesn't exist
     }
+
+    // Move the uploaded file from temporary location to permanent storage
+    // $_FILES['event_invitation']['tmp_name'] is the temporary file path
+    // $target_file is the destination path
+    if (move_uploaded_file($file['tmp_name'], $target_file)) {
+        // File successfully uploaded and moved
+        // Store the file path for database insertion
+        $event_image = $target_file;
+    } 
+    // Note: If upload fails, $event_image will remain undefined/null
+}
 
     if (strtolower($purpose) == 'class') {
         $event_type = null; // or you can explicitly set it to NULL if needed
