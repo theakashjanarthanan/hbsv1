@@ -2528,6 +2528,9 @@ $currentDateTime = date('Y-m-d H:i:s');
             date: null,
             slot: null
         };
+        
+        // Track the currently selected date to detect day changes
+        let currentSelectedDate = null;
 
         // Helper function to check if a slot is available for a given date
         function isSlotAvailable(date, slot) {
@@ -2617,6 +2620,49 @@ $currentDateTime = date('Y-m-d H:i:s');
             const previousDateForRange = startDateInputForRange.value;
             const dateChangedForRange = previousDateForRange && previousDateForRange !== date;
             
+            // If date changed during range selection attempt, clear previous selections and treat as new selection
+            if (dateChangedForRange && isAvailable) {
+                // Clear all previous selections when switching to a different day
+                const allCheckboxesForRange = document.querySelectorAll('.slot-checkbox');
+                allCheckboxesForRange.forEach(checkbox => {
+                    checkbox.checked = false;
+                });
+                
+                // Clear slot input
+                const slotInputForRange = document.getElementById('slot_or_session');
+                if (slotInputForRange) {
+                    slotInputForRange.value = '';
+                }
+                
+                // Clear FN/AN checkboxes
+                const fnCheckboxForRange = document.getElementById('fn');
+                const anCheckboxForRange = document.getElementById('an');
+                if (fnCheckboxForRange) fnCheckboxForRange.checked = false;
+                if (anCheckboxForRange) anCheckboxForRange.checked = false;
+                
+                // Clear calendar visualization
+                const activeCellsForRange = document.querySelectorAll('.activeAttachment');
+                activeCellsForRange.forEach(cell => {
+                    cell.classList.remove('activeAttachment');
+                });
+                
+                // Reset last clicked slot
+                lastClickedSlot = { date: null, slot: null };
+                
+                // Update the tracked current selected date
+                currentSelectedDate = date;
+                
+                // Update display
+                if (typeof updateSelectedSlotsDisplay === 'function') {
+                    updateSelectedSlotsDisplay([]);
+                }
+                
+                // Update calendar visualization
+                if (typeof updateCalendarForSelectedSlots === 'function') {
+                    updateCalendarForSelectedSlots([]);
+                }
+            }
+            
             // Only allow range selection on the same day (if date changed, treat as new selection)
             if (isAvailable && !dateChangedForRange && lastClickedSlot.date === date && lastClickedSlot.slot !== null && lastClickedSlot.slot !== slotInt && !isSlotAlreadySelected) {
                 // Range selection: user clicked another available slot on the same day
@@ -2664,10 +2710,17 @@ $currentDateTime = date('Y-m-d H:i:s');
                     slotsToSelect.forEach(slotNum => {
                         updateSlotCheckboxes(slotNum, true);
                     });
+                    
+                    // Update calendar visualization after range selection
+                    if (typeof updateCalendarForSelectedSlots === 'function') {
+                        updateCalendarForSelectedSlots(currentSelectedSlots.map(s => s.toString()));
+                    }
                 }, 1000);
                 
                 // Update last clicked slot
                 lastClickedSlot = { date: date, slot: slotInt };
+                // Update the tracked current selected date
+                currentSelectedDate = date;
                 return;
             }
             
@@ -2679,7 +2732,8 @@ $currentDateTime = date('Y-m-d H:i:s');
             const anCheckbox = document.getElementById('an');
             
             // Check if the date has changed from the previous selection
-            const previousDate = startDateInput.value;
+            // Use both the input value and the tracked currentSelectedDate
+            const previousDate = startDateInput.value || currentSelectedDate;
             const dateChanged = previousDate && previousDate !== date;
             
             // Check if slot is already selected
@@ -2707,17 +2761,38 @@ $currentDateTime = date('Y-m-d H:i:s');
                 // Clear slot input
                 slotInput.value = '';
                 
-                // Clear calendar visualization
+                // Clear FN/AN checkboxes
+                fnCheckbox.checked = false;
+                anCheckbox.checked = false;
+                
+                // Clear calendar visualization - remove activeAttachment from all cells
                 const activeCells = document.querySelectorAll('.activeAttachment');
                 activeCells.forEach(cell => {
                     cell.classList.remove('activeAttachment');
                 });
                 
+                // Also clear any visual indicators from previous date
+                // This ensures all calendar cells are properly reset
+                if (typeof updateCalendarForSelectedSlots === 'function') {
+                    updateCalendarForSelectedSlots([]);
+                }
+                
                 // Reset last clicked slot
                 lastClickedSlot = { date: null, slot: null };
                 
                 // Update display
-                updateSelectedSlotsDisplay([]);
+                if (typeof updateSelectedSlotsDisplay === 'function') {
+                    updateSelectedSlotsDisplay([]);
+                }
+                
+                // Clear any booking status messages
+                const bookingStatus = document.getElementById('booking-status');
+                if (bookingStatus) {
+                    bookingStatus.innerHTML = '';
+                }
+                
+                // Update the tracked current selected date
+                currentSelectedDate = date;
             }
             
             // Show loading overlay for time slot selection/deselection
@@ -2764,6 +2839,8 @@ $currentDateTime = date('Y-m-d H:i:s');
                 // Update last clicked slot only if it's an available slot
                 if (isAvailable) {
                     lastClickedSlot = { date: date, slot: slotInt };
+                    // Update the tracked current selected date
+                    currentSelectedDate = date;
                 } else {
                     // Reset if clicking on non-available slot
                     lastClickedSlot = { date: null, slot: null };
@@ -2790,6 +2867,13 @@ $currentDateTime = date('Y-m-d H:i:s');
                 } else {
                     // Add to selection
                     updateSlotCheckboxes(slot, true);
+                }
+                
+                // Update calendar visualization after slot selection
+                const finalSelectedSlots = Array.from(document.querySelectorAll('input[name="slots[]"]:checked'))
+                    .map(s => s.value);
+                if (typeof updateCalendarForSelectedSlots === 'function') {
+                    updateCalendarForSelectedSlots(finalSelectedSlots);
                 }
             }, 1000); // Wait for loading animation to complete
         }
